@@ -10,8 +10,8 @@ public class SplitVirtualPad : MonoBehaviour
   public TextMeshProUGUI leftPadText;
   public TextMeshProUGUI rightPadText;
 
-  public float joyStickMaxTravel = 250f;
-  public float baseSpeed = 0.3f;
+  private float joyStickMaxTravel = 250f;
+  public float baseSpeed = 0.8f;
   private Touch leftTouch, rightTouch;
   private Vector2 joyStickTouchStartPosition, joyStickTouchEndPosition;
   private Vector2 actionTouchStartPosition, actionTouchEndPosition;
@@ -30,7 +30,7 @@ public class SplitVirtualPad : MonoBehaviour
   void Update()
   {
     if(Input.touchCount > 0) {
-      for(int i = 0; i < Input.touchCount; i++) {
+      for (int i = 0; i < Input.touchCount; i++) {
         Touch currentTouch = Input.GetTouch(i);
         if (currentTouch.position.x < Screen.width / 2) {
           leftTouch = currentTouch;
@@ -39,21 +39,21 @@ public class SplitVirtualPad : MonoBehaviour
         }
       }
 
-      if(leftTouch.phase == TouchPhase.Began) {
+      if (leftTouch.phase == TouchPhase.Began) {
         joyStickTouchStartPosition = leftTouch.position;
-      } else if(leftTouch.phase == TouchPhase.Moved || leftTouch.phase == TouchPhase.Ended) {
+      } else if (leftTouch.phase == TouchPhase.Moved || leftTouch.phase == TouchPhase.Ended) {
         float currentTouchX = leftTouch.position.x;
-        float joyStickSensitivity = Mathf.Clamp(Mathf.Abs(joyStickTouchStartPosition.x - currentTouchX), 0, joyStickMaxTravel)/joyStickMaxTravel;
+        float joyStickSensitivity = Mathf.Clamp(Mathf.Abs(joyStickTouchStartPosition.x - currentTouchX), 0, joyStickMaxTravel) / joyStickMaxTravel;
         joyStickTouchEndPosition = leftTouch.position;
 
         float x = joyStickTouchEndPosition.x - joyStickTouchStartPosition.x;
 
         if (x > 0) {
           direction = "Right";
-        //   player.move.x = baseSpeed * joyStickSensitivity;
+          player.move.x = baseSpeed * joyStickSensitivity;
         } else if (x < 0) {
           direction = "Left";
-        //   player.move.x = -baseSpeed * joyStickSensitivity;
+          player.move.x = -baseSpeed * joyStickSensitivity;
         } else {
           direction = "Tapped";
         }
@@ -76,6 +76,7 @@ public class SplitVirtualPad : MonoBehaviour
         if (Mathf.Abs(y) > Mathf.Abs(x)) {
           if (y > 0) {
             multiTouchActionInfo = "Up";
+            player.actionDirection = PlayerController.Direction.Up;
 
             if (shouldJump && player.IsGrounded()) {
               player.Jump();
@@ -85,16 +86,16 @@ public class SplitVirtualPad : MonoBehaviour
             // player.direction = 2;
           } else {
             multiTouchActionInfo = "Down";
+            player.actionDirection = PlayerController.Direction.Down;
             // player.direction = -2;
           }
         } else {
           if (x > 0) {
             multiTouchActionInfo = "Right";
-            // player.direction = 1;
-            
+            player.actionDirection = PlayerController.Direction.Right;
           } else {
             multiTouchActionInfo = "Left";
-            // player.direction = -1;
+            player.actionDirection = PlayerController.Direction.Left;
           }
         }
 
@@ -103,10 +104,11 @@ public class SplitVirtualPad : MonoBehaviour
 
       if (leftTouch.phase == TouchPhase.Ended || leftTouch.phase == TouchPhase.Canceled) {
         direction = "Stopped";
-        // player.move.x = 0;
+        player.move.x = 0;
       }
       if (rightTouch.phase == TouchPhase.Ended) {
         multiTouchActionInfo = "Ended";
+        player.actionDirection = PlayerController.Direction.Stationary;
       }
     }
 
