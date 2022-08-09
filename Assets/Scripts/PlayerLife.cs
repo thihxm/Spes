@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,7 @@ public class PlayerLife : MonoBehaviour
 
   public Vector2 lastGroundPosition;
 
-  private GameObject collisionObject;
+  Collider2D[] objectsInsideArea;
 
   // Start is called before the first frame update
   void Start()
@@ -22,18 +23,17 @@ public class PlayerLife : MonoBehaviour
   // Update is called once per frame
   void Update()
   {
-    
+    objectsInsideArea = Physics2D.OverlapCircleAll(body.position, 2f);
+    bool isGrounded = playerController.IsGrounded();
+    bool isTrapInsideRadius = Array.Exists(objectsInsideArea, x => x.gameObject.CompareTag("Trap"));
+    if (isGrounded && !isTrapInsideRadius)
+    { 
+      lastGroundPosition = transform.position;
+    }
   }
 
   private void OnCollisionEnter2D(Collision2D collision)
   {
-    collisionObject = collision.gameObject;
-
-    bool isGrounded = playerController.IsGrounded();
-    if (isGrounded && !collisionObject.CompareTag("Trap")) {
-      lastGroundPosition = transform.position;
-    }
-
     if (collision.gameObject.CompareTag("Trap"))
     {
       Die();
