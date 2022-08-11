@@ -33627,22 +33627,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08e4bb2528b7b44f0be2c42cc3e9b9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpTakeOffSpeed: 7
-  jumpModifier: 1.5
-  jumpDeceleration: 0.5
-  jumpState: 0
   velocity: {x: 0, y: 0}
   dashDistance: 100
   actionDirection: 0
+  lastActionDirection: 5
   isActive: 1
   movementVelocity: 7
   dashingVelocity: 14
   dashingTime: 0.5
-  jumpForce: 10
-  fallMultiplier: 7
-  jumpVelocityFalloff: 4
-  coyoteTime: 0.2
+  jumpForce: 11
+  fallMultiplier: 6
+  jumpVelocityFalloff: 6
+  coyoteTime: 0.15
   enableDoubleJump: 1
+  jumpState: 0
+  shouldJump: 0
   inputX: 0
   inputY: 0
   groundMask:

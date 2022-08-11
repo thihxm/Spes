@@ -19,6 +19,7 @@ public class SplitVirtualPad : MonoBehaviour
   private string multiTouchActionInfo;
   private int maxTapCount;
 
+  private float lastX;
   void Start() {
     leftTouch.phase = TouchPhase.Canceled;
     rightTouch.phase = TouchPhase.Canceled;
@@ -44,16 +45,27 @@ public class SplitVirtualPad : MonoBehaviour
         float joyStickSensitivity = Mathf.Clamp(Mathf.Abs(joyStickTouchStartPosition.x - joyStickTouchEndPosition.x), 0, joyStickMaxTravel) / joyStickMaxTravel;
 
         float x = joyStickTouchEndPosition.x - joyStickTouchStartPosition.x;
+        float y = joyStickTouchEndPosition.y - joyStickTouchStartPosition.y;
 
-        if (x > 0) {
-          direction = "Right";
-          player.inputX = joyStickSensitivity;
-        } else if (x < 0) {
-          direction = "Left";
-          player.inputX = -joyStickSensitivity;
-        } else {
+        if (Mathf.Abs(x) == 0 && Mathf.Abs(y) == 0) {
           direction = "Tapped";
+        } else {
+          if (Mathf.Abs(x) >= Mathf.Abs(lastX) - 10) {
+            if (x > 0) {
+              direction = "Right";
+              player.inputX = joyStickSensitivity;
+            } else if (x < 0) {
+              direction = "Left";
+              player.inputX = -joyStickSensitivity;
+            }
+          } else {
+            Vector2 auxJoyStickTouchStartPosition = joyStickTouchStartPosition;
+            joyStickTouchStartPosition = joyStickTouchEndPosition;
+            joyStickTouchEndPosition = auxJoyStickTouchStartPosition;
+          } 
         }
+
+        lastX = x;
       }
 
       if (leftTouch.phase == TouchPhase.Ended || leftTouch.phase == TouchPhase.Canceled) {
@@ -74,31 +86,32 @@ public class SplitVirtualPad : MonoBehaviour
         if (Mathf.Abs(x) == 0 && Mathf.Abs(y) == 0) {
           multiTouchActionInfo = "Tapped";
 
-          player.actionDirection = PlayerController.Direction.Tap;
-        }
-        if (Mathf.Abs(y) > Mathf.Abs(x)) {
-          if (y > 0) {
-            multiTouchActionInfo = "Up";
-            player.actionDirection = PlayerController.Direction.Up;
-
-            player.inputY = joyStickSensitivity;
-          } else {
-            multiTouchActionInfo = "Down";
-            player.actionDirection = PlayerController.Direction.Down;
-          }
+          player.actionDirection = PlayerController.Direction.Up;
         } else {
-          if (x > 0) {
-            multiTouchActionInfo = "Right";
-            player.actionDirection = PlayerController.Direction.Right;
+          if (Mathf.Abs(y) > Mathf.Abs(x)) {
+            if (y > 0) {
+              multiTouchActionInfo = "Up";
+              player.actionDirection = PlayerController.Direction.Tap;
+
+              player.inputY = joyStickSensitivity;
+            } else {
+              multiTouchActionInfo = "Down";
+              player.actionDirection = PlayerController.Direction.Down;
+            }
           } else {
-            multiTouchActionInfo = "Left";
-            player.actionDirection = PlayerController.Direction.Left;
+            if (x > 0) {
+              multiTouchActionInfo = "Right";
+              player.actionDirection = PlayerController.Direction.Right;
+            } else {
+              multiTouchActionInfo = "Left";
+              player.actionDirection = PlayerController.Direction.Left;
+            }
           }
         }
       }
 
       if (rightTouch.phase == TouchPhase.Ended || rightTouch.phase == TouchPhase.Canceled) {
-        multiTouchActionInfo = "Ended";
+        // multiTouchActionInfo = "Ended";
         player.inputY = 0;
         player.lastActionDirection = player.actionDirection;
         player.shouldJump = player.actionDirection == PlayerController.Direction.Up;
