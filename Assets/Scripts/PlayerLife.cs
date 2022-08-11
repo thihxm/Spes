@@ -24,7 +24,7 @@ public class PlayerLife : MonoBehaviour
   void Update()
   {
     objectsInsideArea = Physics2D.OverlapCircleAll(body.position, 2f);
-    bool isGrounded = playerController.IsGrounded();
+    bool isGrounded = playerController.isGrounded;
     bool isTrapInsideRadius = Array.Exists(objectsInsideArea, x => x.gameObject.CompareTag("Trap"));
     if (isGrounded && !isTrapInsideRadius)
     { 
