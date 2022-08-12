@@ -86,12 +86,12 @@ public class SplitVirtualPad : MonoBehaviour
         if (Mathf.Abs(x) == 0 && Mathf.Abs(y) == 0) {
           multiTouchActionInfo = "Tapped";
 
-          player.actionDirection = PlayerController.Direction.Up;
+          player.actionDirection = PlayerController.Direction.Tap;
         } else {
           if (Mathf.Abs(y) > Mathf.Abs(x)) {
             if (y > 0) {
               multiTouchActionInfo = "Up";
-              player.actionDirection = PlayerController.Direction.Tap;
+              player.actionDirection = PlayerController.Direction.Up;
 
               player.inputY = joyStickSensitivity;
             } else {
@@ -114,7 +114,10 @@ public class SplitVirtualPad : MonoBehaviour
         // multiTouchActionInfo = "Ended";
         player.inputY = 0;
         player.lastActionDirection = player.actionDirection;
-        player.shouldJump = player.actionDirection == PlayerController.Direction.Up;
+        
+        player.shouldJump = player.isGrounded && player.actionDirection == PlayerController.Direction.Tap;
+        player.shouldDash = !player.isGrounded && player.actionDirection == PlayerController.Direction.Down;
+
         actionTouchStartPosition = Vector2.zero;
         actionTouchEndPosition = Vector2.zero;
         

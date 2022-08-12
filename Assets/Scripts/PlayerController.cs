@@ -19,6 +19,9 @@ public class PlayerController : MonoBehaviour
 
   private FrameInputs inputs;
 
+  private bool facingLeft = false;
+  private float defaultGravityScale;
+
 
   [Header("Movement variables")]
   [SerializeField] private bool isActive = true;
@@ -27,11 +30,15 @@ public class PlayerController : MonoBehaviour
 
 
   [Header("Dashing")]
-  [SerializeField] private float dashingVelocity = 14f;
-  [SerializeField] private float dashingTime = 0.5f;
-  private Vector2 dashingDirection;
-  private bool isDashing;
-  private bool canDash;
+  [SerializeField] private float dashSpeed = 15f;
+  [SerializeField] private float dashLength = 0.4f;
+
+  public bool shouldDash = false;
+  [SerializeField]private bool hasDashed;
+  [SerializeField]private bool isDashing;
+  [SerializeField]private float timeStartedDash;
+  [SerializeField]private Vector2 dashDirection;
+
 
   [Header("Jump variables")]
   [SerializeField] private float jumpForce = 11f;
@@ -61,6 +68,7 @@ public class PlayerController : MonoBehaviour
     collider = GetComponent<BoxCollider2D>();
     transform.position = new Vector3(0, 0, 0);
     spriteRenderer = GetComponent<SpriteRenderer>();
+    defaultGravityScale = body.gravityScale;
   }
 
   // Update is called once per frame
@@ -74,7 +82,7 @@ public class PlayerController : MonoBehaviour
 
     HandleJumping();
 
-    // ComputeDash();
+    HandleDashing();
   }
 
   void GatherInputs() {
@@ -101,22 +109,20 @@ public class PlayerController : MonoBehaviour
 
   void HandleWalking() {
     if (inputX > 0.01f) {
-      spriteRenderer.flipX = false;
+      facingLeft = false;
     } else if (inputX < -0.01f) {
-      spriteRenderer.flipX = true;
+      facingLeft = true;
     }
+    spriteRenderer.flipX = facingLeft;
 
     body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
   }
 
-  // public void Jump() {
-  //   body.velocity = new Vector2(body.velocity.x, 10f);
-  //   // body.AddForce(Vector2.up * 10f, ForceMode2D.Impulse);
-  // }
-
   public void HandleJumping() {
     if (isGrounded || Time.time < timeLeftGrounded + coyoteTime) {
       Jump();
+    } else if (!isGrounded && !enableDoubleJump) {
+      shouldJump = false;
     }
 
     void Jump() {}
@@ -137,7 +143,8 @@ public class PlayerController : MonoBehaviour
 
     void ExecuteJump(Vector2 dir, bool doubleJump = false) {
       body.velocity = dir;
-      hasDoubleJumped = doubleJump;
+      // hasDoubleJumped = doubleJump;
+      hasDoubleJumped = true;
       hasJumped = true;
       shouldJump = false;
       if (doubleJump) {
@@ -147,9 +154,46 @@ public class PlayerController : MonoBehaviour
       }
     }
 
-    if (body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Up) {
+    if (body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Tap) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
+  }
+
+  private void HandleDashing() {
+    if (shouldDash && !hasDashed && !isGrounded) {
+      dashDirection = new Vector2(inputs.RawX, inputs.RawY).normalized;
+      if (dashDirection == Vector2.zero) {
+        dashDirection = facingLeft ? Vector2.left : Vector2.right;
+      }
+      isDashing = true;
+      hasDashed = true;
+      timeStartedDash = Time.time;
+      body.gravityScale = 0;
+      shouldDash = false;
+    }
+
+    if (isDashing) {
+      body.velocity = dashDirection * dashSpeed;
+
+      if (Time.time >= timeStartedDash + dashLength) {
+        isDashing = false;
+        // Clamp the velocity so they don't keep shooting off
+        body.velocity = new Vector3(body.velocity.x, body.velocity.y > 3 ? 3 : body.velocity.y);
+        body.gravityScale = defaultGravityScale;
+        if (isGrounded) {
+          hasDashed = false;
+        }
+      }
+    }
+  }
+
+  private void OnTriggerEnter2D(Collider2D other) {
+    // if (other.CompareTag("Death")) {
+    //   Instantiate(_deathExplosion, transform.position, Quaternion.identity);
+    //   Destroy(gameObject);
+    // }
+
+    hasDashed = false;
   }
 
   private struct FrameInputs {
