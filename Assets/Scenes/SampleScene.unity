@@ -33627,19 +33627,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08e4bb2528b7b44f0be2c42cc3e9b9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  velocity: {x: 0, y: 0}
-  dashDistance: 100
   actionDirection: 0
   lastActionDirection: 5
   isActive: 1
   movementVelocity: 7
-  dashingVelocity: 14
-  dashingTime: 0.5
+  dashSpeed: 15
+  dashLength: 0.4
+  shouldDash: 0
+  dashDirection: {x: 0, y: 0}
   jumpForce: 11
   fallMultiplier: 6
   jumpVelocityFalloff: 6
   coyoteTime: 0.15
-  enableDoubleJump: 1
+  enableDoubleJump: 0
   jumpState: 0
   shouldJump: 0
   inputX: 0

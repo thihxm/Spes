@@ -4,42 +4,40 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-  // Start is called before the first frame update
+  #region Entity variables
   private Rigidbody2D body;
   private BoxCollider2D collider;
-
   SpriteRenderer spriteRenderer;
-
-  public Vector2 velocity;
-  
-  public float dashDistance = 100f;
-  private float lastActionTime = 0f;
-  public Direction actionDirection;
-  public Direction lastActionDirection = Direction.Stationary;
-
-  private FrameInputs inputs;
-
   private bool facingLeft = false;
   private float defaultGravityScale;
+  #endregion
+  
+  #region Input variables
+  public Direction actionDirection;
+  public Direction lastActionDirection = Direction.Stationary;
+  private FrameInputs inputs;
+  #endregion
 
-
+  #region Movement variables
   [Header("Movement variables")]
   [SerializeField] private bool isActive = true;
   [SerializeField] private float movementVelocity = 7f;
   // [SerializeField] private float jumpVelocity = 7;
+  #endregion
 
-
-  [Header("Dashing")]
+  #region Dash variables
+  [Header("Dash variables")]
   [SerializeField] private float dashSpeed = 15f;
   [SerializeField] private float dashLength = 0.4f;
 
   public bool shouldDash = false;
-  [SerializeField]private bool hasDashed;
-  [SerializeField]private bool isDashing;
-  [SerializeField]private float timeStartedDash;
-  [SerializeField]private Vector2 dashDirection;
+  private bool hasDashed;
+  private bool isDashing;
+  private float timeStartedDash;
+  public Vector2 dashDirection;
+  #endregion
 
-
+  #region Jump variables
   [Header("Jump variables")]
   [SerializeField] private float jumpForce = 11f;
   [SerializeField] private float fallMultiplier = 6f;
@@ -55,13 +53,16 @@ public class PlayerController : MonoBehaviour
 
   public float inputX = 0f;
   public float inputY = 0f;
+  #endregion
 
+  #region Touch Ground variables
   [Header("Touch Ground variables")]
   [SerializeField] private LayerMask groundMask;
   [SerializeField] private float grounderOffset = -1f, grounderRadius = 0.2f;
   [SerializeField] private float wallCheckOffset = 0.5f, wallCheckRadius = 0.05f;
   private bool isAgainstLeftWall, isAgainstRightWall, pushingLeftWall, pushingRightWall;
   public bool isGrounded;
+  #endregion
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
@@ -89,6 +90,7 @@ public class PlayerController : MonoBehaviour
     // inputs.RawX = 
   }
 
+  #region Grounding
   void HandleGrounding() {
     var grounded = Physics2D.OverlapCircle(transform.position + new Vector3(0, grounderOffset), grounderRadius, groundMask);
 
@@ -106,8 +108,12 @@ public class PlayerController : MonoBehaviour
     pushingLeftWall = isAgainstLeftWall && inputX < 0.01f;
     pushingRightWall = isAgainstRightWall && inputX > 0.01f;
   }
+  #endregion
 
+  #region Walking
   void HandleWalking() {
+    if (isDashing) return;
+
     if (inputX > 0.01f) {
       facingLeft = false;
     } else if (inputX < -0.01f) {
@@ -117,8 +123,14 @@ public class PlayerController : MonoBehaviour
 
     body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
   }
+  #endregion
 
+  #region Jumping
   public void HandleJumping() {
+    if (isDashing) {
+      return;
+    }
+
     if (isGrounded || Time.time < timeLeftGrounded + coyoteTime) {
       Jump();
     } else if (!isGrounded && !enableDoubleJump) {
@@ -127,12 +139,6 @@ public class PlayerController : MonoBehaviour
 
     void Jump() {}
 
-    if (isDashing) {
-      return;
-    }
-
-    //Verificar estado do input
-    // if (inputY > 0.25f) {
     if (shouldJump) {
       if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
         if (!hasJumped || hasJumped && !hasDoubleJumped) {
@@ -154,17 +160,20 @@ public class PlayerController : MonoBehaviour
       }
     }
 
-    if (body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Tap) {
+    bool isGravityEnabled = body.gravityScale > 0;
+    if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Tap) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
   }
+  #endregion
 
+  #region Dashing
   private void HandleDashing() {
     if (shouldDash && !hasDashed && !isGrounded) {
-      dashDirection = new Vector2(inputs.RawX, inputs.RawY).normalized;
-      if (dashDirection == Vector2.zero) {
-        dashDirection = facingLeft ? Vector2.left : Vector2.right;
-      }
+      // dashDirection = new Vector2(inputs.RawX, inputs.RawY).normalized;
+      // if (dashDirection == Vector2.zero) {
+      //   dashDirection = facingLeft ? Vector2.left : Vector2.right;
+      // }
       isDashing = true;
       hasDashed = true;
       timeStartedDash = Time.time;
@@ -173,12 +182,13 @@ public class PlayerController : MonoBehaviour
     }
 
     if (isDashing) {
+      Debug.Log("Dashing direction: " + dashDirection);
       body.velocity = dashDirection * dashSpeed;
 
       if (Time.time >= timeStartedDash + dashLength) {
         isDashing = false;
         // Clamp the velocity so they don't keep shooting off
-        body.velocity = new Vector3(body.velocity.x, body.velocity.y > 3 ? 3 : body.velocity.y);
+        body.velocity = new Vector2(body.velocity.x, body.velocity.y > 3 ? 3 : body.velocity.y);
         body.gravityScale = defaultGravityScale;
         if (isGrounded) {
           hasDashed = false;
@@ -186,15 +196,15 @@ public class PlayerController : MonoBehaviour
       }
     }
   }
+  #endregion
 
+  #region Collisions
+  private void OnCollisionEnter2D(Collision2D collision) {}
   private void OnTriggerEnter2D(Collider2D other) {
-    // if (other.CompareTag("Death")) {
-    //   Instantiate(_deathExplosion, transform.position, Quaternion.identity);
-    //   Destroy(gameObject);
-    // }
-
     hasDashed = false;
+    dashDirection = Vector2.zero;
   }
+  #endregion
 
   private struct FrameInputs {
     public float X, Y;
