@@ -97,6 +97,7 @@ public class PlayerController : MonoBehaviour
     if (!isGrounded && grounded) {
       isGrounded = true;
       hasJumped = false;
+      hasDashed = false;
       jumpState = JumpState.Grounded;
     } else if (isGrounded && !grounded) {
       isGrounded = false;
@@ -170,10 +171,6 @@ public class PlayerController : MonoBehaviour
   #region Dashing
   private void HandleDashing() {
     if (shouldDash && !hasDashed && !isGrounded) {
-      // dashDirection = new Vector2(inputs.RawX, inputs.RawY).normalized;
-      // if (dashDirection == Vector2.zero) {
-      //   dashDirection = facingLeft ? Vector2.left : Vector2.right;
-      // }
       isDashing = true;
       hasDashed = true;
       timeStartedDash = Time.time;
@@ -182,7 +179,6 @@ public class PlayerController : MonoBehaviour
     }
 
     if (isDashing) {
-      Debug.Log("Dashing direction: " + dashDirection);
       body.velocity = dashDirection * dashSpeed;
 
       if (Time.time >= timeStartedDash + dashLength) {

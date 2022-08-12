@@ -40,8 +40,6 @@ public class PlayerLife : MonoBehaviour
     }
   }
 
-
-
   private void Die() {
     body.bodyType = RigidbodyType2D.Static;
     StartCoroutine(Restart());
