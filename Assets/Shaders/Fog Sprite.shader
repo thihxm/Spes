@@ -4,13 +4,18 @@ Shader "Sprites/Diffuse with Fog (URP)"
 {
 	Properties
 	{
-		[PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
-		_Color ("Tint", Color) = (1,1,1,1)
+    _MainTex("Diffuse", 2D) = "white" {}
+    _MaskTex("Mask", 2D) = "white" {}
+    _NormalMap("Normal Map", 2D) = "bump" {}
+		// [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
 		[MaterialToggle] PixelSnap ("Pixel snap", Float) = 0
-		[HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
-		[HideInInspector] _Flip ("Flip", Vector) = (1,1,1,1)
-		[PerRendererData] _AlphaTex ("External Alpha", 2D) = "white" {}
-		[PerRendererData] _EnableExternalAlpha ("Enable External Alpha", Float) = 0
+
+    // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
+    _Color ("Tint", Color) = (1,1,1,1)
+    [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
+    [HideInInspector] _Flip("Flip", Vector) = (1,1,1,1)
+    [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
+    [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
 	}
 
 	SubShader
@@ -22,7 +27,7 @@ Shader "Sprites/Diffuse with Fog (URP)"
 			"RenderType"="Transparent" 
 			"PreviewType"="Plane"
 			"CanUseSpriteAtlas"="True"
-      "RenderPipeline" = "UniversalRenderPipeline"
+      "RenderPipeline" = "UniversalPipeline"
     }
       
     Cull Off
