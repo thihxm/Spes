@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IObserver
 {
   #region Entity variables
   private Rigidbody2D body;
@@ -27,21 +27,21 @@ public class PlayerController : MonoBehaviour
 
   #region Dash variables
   [Header("Dash variables")]
-  [SerializeField] private float dashSpeed = 15f;
+  [SerializeField] private float dashSpeed = 22f;
   [SerializeField] private float dashLength = 0.4f;
 
   public bool shouldDash = false;
   private bool hasDashed;
-  private bool isDashing;
+  [SerializeField] private bool isDashing;
   private float timeStartedDash;
   public Vector2 dashDirection;
   #endregion
 
   #region Jump variables
   [Header("Jump variables")]
-  [SerializeField] private float jumpForce = 11f;
+  [SerializeField] private float jumpForce = 26f;
   [SerializeField] private float fallMultiplier = 6f;
-  [SerializeField] private float jumpVelocityFalloff = 6f;
+  [SerializeField] private float jumpVelocityFalloff = 14f;
   [SerializeField] private float coyoteTime = 0.15f;
   [SerializeField] private bool enableDoubleJump = true;
   [SerializeField] private JumpState jumpState = JumpState.Grounded;
@@ -67,7 +67,7 @@ public class PlayerController : MonoBehaviour
   void Start() {
     body = GetComponent<Rigidbody2D>();
     collider = GetComponent<BoxCollider2D>();
-    transform.position = new Vector3(0, 0, 0);
+    // transform.position = new Vector3(-40, 30, 0);
     spriteRenderer = GetComponent<SpriteRenderer>();
     defaultGravityScale = body.gravityScale;
   }
@@ -113,7 +113,7 @@ public class PlayerController : MonoBehaviour
 
   #region Walking
   void HandleWalking() {
-    if (isDashing) return;
+    if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
 
     if (inputX > 0.01f) {
       facingLeft = false;
@@ -128,17 +128,17 @@ public class PlayerController : MonoBehaviour
 
   #region Jumping
   public void HandleJumping() {
-    if (isDashing) {
+    if (isDashing && (dashDirection == Vector2.up)) {
       return;
     }
 
-    if (isGrounded || Time.time < timeLeftGrounded + coyoteTime) {
-      Jump();
-    } else if (!isGrounded && !enableDoubleJump) {
-      shouldJump = false;
-    }
+    // if (isGrounded || Time.time > timeLeftGrounded + coyoteTime) {
+    //   Jump();
+    // } else if (!isGrounded && !enableDoubleJump) {
+    //   shouldJump = false;
+    // }
 
-    void Jump() {}
+    // void Jump() {}
 
     if (shouldJump) {
       if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
@@ -170,25 +170,14 @@ public class PlayerController : MonoBehaviour
 
   #region Dashing
   private void HandleDashing() {
-    if (shouldDash && !hasDashed && !isGrounded) {
-      isDashing = true;
-      hasDashed = true;
-      timeStartedDash = Time.time;
-      body.gravityScale = 0;
-      shouldDash = false;
-    }
-
-    if (isDashing) {
-      body.velocity = dashDirection * dashSpeed;
-
-      if (Time.time >= timeStartedDash + dashLength) {
-        isDashing = false;
-        // Clamp the velocity so they don't keep shooting off
-        body.velocity = new Vector2(body.velocity.x, body.velocity.y > 3 ? 3 : body.velocity.y);
-        body.gravityScale = defaultGravityScale;
-        if (isGrounded) {
-          hasDashed = false;
-        }
+    if (isDashing && Time.time >= timeStartedDash + dashLength) {
+      Debug.Log("Dash finished");
+      isDashing = false;
+      // Clamp the velocity so they don't keep shooting off
+      // body.velocity = new Vector2(body.velocity.x > dashSpeed ? dashSpeed : body.velocity.x, body.velocity.y > dashSpeed ? dashSpeed : body.velocity.y);
+      // body.gravityScale = defaultGravityScale;
+      if (isGrounded) {
+        hasDashed = false;
       }
     }
   }
@@ -201,6 +190,61 @@ public class PlayerController : MonoBehaviour
     dashDirection = Vector2.zero;
   }
   #endregion
+
+  public void Trigger(ISubject subject)
+  {
+    SplitVirtualPad splitVirtualPad = (SplitVirtualPad) subject;
+    actionDirection = splitVirtualPad.actionDirection;
+
+    if (isGrounded && actionDirection == Direction.Tap) {
+      shouldJump = true;
+      return;
+    }
+
+    if (!hasDashed && !isGrounded) {
+      Debug.Log("Will dash");
+      switch (actionDirection)
+      {
+        case Direction.Right:
+          dashDirection = Vector2.left;
+          break;
+        case Direction.Left:
+          dashDirection = Vector2.right;
+          break;
+        case Direction.Up:
+          dashDirection = Vector2.down;
+          break;
+        case Direction.Down:
+          dashDirection = Vector2.up;
+          break;
+        default:
+          return;
+      }
+
+      isDashing = true;
+      hasDashed = true;
+      timeStartedDash = Time.time;
+    }
+
+    if (isDashing) {
+      Vector2 dashVelocity = dashDirection * dashSpeed;
+
+      float xVelocity = body.velocity.x + dashVelocity.x;
+      if ((dashDirection == Vector2.left || dashDirection == Vector2.right) && Mathf.Abs(xVelocity) > dashSpeed) {
+        xVelocity = xVelocity > 0 ? dashSpeed : -dashSpeed;
+      }
+
+      float yVelocity = body.velocity.y + dashVelocity.y;
+      if ((dashDirection == Vector2.up || dashDirection == Vector2.down) && Mathf.Abs(yVelocity) > dashSpeed) {
+        yVelocity = yVelocity > 0 ? dashSpeed * 0.5f : -dashSpeed;
+      }
+      if (dashDirection == Vector2.up && yVelocity < dashSpeed) {
+        yVelocity = dashSpeed * 0.5f;
+      }
+
+      body.velocity = new Vector2(xVelocity, yVelocity);
+    }
+  }
 
   private struct FrameInputs {
     public float X, Y;
@@ -215,14 +259,5 @@ public class PlayerController : MonoBehaviour
     DoubleJumping,
     InFlight,
     Landed
-  }
-
-  public enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-    Tap,
-    Stationary
   }
 }

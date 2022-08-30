@@ -21,16 +21,16 @@ public class WindShooter : MonoBehaviour, IObserver
     SplitVirtualPad splitVirtualPad = (SplitVirtualPad) subject;
 
     if (player.isGrounded) {  
-      if (splitVirtualPad.actionDirection == SplitVirtualPad.Direction.Left)
+      if (splitVirtualPad.actionDirection == Direction.Left)
       {
         Shoot(leftPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == SplitVirtualPad.Direction.Right)
+      } else if (splitVirtualPad.actionDirection == Direction.Right)
       {
         Shoot(rightPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == SplitVirtualPad.Direction.Up)
+      } else if (splitVirtualPad.actionDirection == Direction.Up)
       {
         Shoot(topPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == SplitVirtualPad.Direction.Down)
+      } else if (splitVirtualPad.actionDirection == Direction.Down)
       {
         Shoot(bottomPoint, (int) splitVirtualPad.actionDirection);
       }

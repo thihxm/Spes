@@ -124,28 +124,28 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
             debugRightSideInfo = "Tapped";
             actionDirection = Direction.Tap;
 
-            player.actionDirection = PlayerController.Direction.Tap;
+            // player.actionDirection = Direction.Tap;
           } else {
             if (Mathf.Abs(y) > Mathf.Abs(x)) {
               if (y > 0) {
                 debugRightSideInfo = "Up";
-                player.actionDirection = PlayerController.Direction.Up;
+                // player.actionDirection = Direction.Up;
                 actionDirection = Direction.Up;
 
                 player.inputY = joyStickSensitivity;
               } else {
                 debugRightSideInfo = "Down";
-                player.actionDirection = PlayerController.Direction.Down;
+                // player.actionDirection = Direction.Down;
                 actionDirection = Direction.Down;
               }
             } else {
               if (x > 0) {
                 debugRightSideInfo = "Right";
-                player.actionDirection = PlayerController.Direction.Right;
+                // player.actionDirection = Direction.Right;
                 actionDirection = Direction.Right;
               } else {
                 debugRightSideInfo = "Left";
-                player.actionDirection = PlayerController.Direction.Left;
+                // player.actionDirection = Direction.Left;
                 actionDirection = Direction.Left;
               }
             }
@@ -153,40 +153,16 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
         }
       }
 
-      if (rightTouch.phase == TouchPhase.Ended || rightTouch.phase == TouchPhase.Canceled) {
+      if (shouldCheckAction && rightTouch.phase == TouchPhase.Ended || rightTouch.phase == TouchPhase.Canceled) {
         debugRightSideInfo = "Ended";
         player.inputY = 0;
-        player.lastActionDirection = player.actionDirection;
+        // player.lastActionDirection = player.actionDirection;
         shouldCheckAction = false;
         this.Notify();
-        
-        if (player.isGrounded) {
-          player.shouldJump = player.actionDirection == PlayerController.Direction.Tap;
-        } else {
-          bool isDashAction = player.actionDirection == PlayerController.Direction.Right || player.actionDirection == PlayerController.Direction.Left || player.actionDirection == PlayerController.Direction.Up || player.actionDirection == PlayerController.Direction.Down;
-
-          player.shouldDash = isDashAction;
-          switch (player.actionDirection)
-          {
-            case PlayerController.Direction.Right:
-              player.dashDirection = Vector2.left;
-              break;
-            case PlayerController.Direction.Left:
-              player.dashDirection = Vector2.right;
-              break;
-            case PlayerController.Direction.Up:
-              player.dashDirection = Vector2.down;
-              break;
-            case PlayerController.Direction.Down:
-              player.dashDirection = Vector2.up;
-              break;
-          }
-        }
-
 
         actionTouchStartPosition = actionTouchEndPosition;
         
-        player.actionDirection = PlayerController.Direction.Stationary;
+        // player.actionDirection = PlayerController.Direction.Stationary;
         actionDirection = Direction.Stationary;
       }
     }
@@ -199,20 +175,19 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
 
   public IEnumerator ResetTouchState() {
     yield return new WaitForSeconds(0.2f);
-    player.lastActionDirection = PlayerController.Direction.Stationary;
+    player.lastActionDirection = Direction.Stationary;
   }
 
   public static void GetAxisRaw() {
 
   }
+}
 
-
-  public enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-    Tap,
-    Stationary
-  }
+public enum Direction {
+  Left,
+  Right,
+  Up,
+  Down,
+  Tap,
+  Stationary
 }
