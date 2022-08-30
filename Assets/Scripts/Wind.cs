@@ -5,6 +5,8 @@ using UnityEngine;
 public class Wind : MonoBehaviour
 {
   [SerializeField] private float speed = 7f;
+  private float timeWhenShot;
+  private float shootLength = 1f;
   private Rigidbody2D body;
 
   void Start()
@@ -12,9 +14,10 @@ public class Wind : MonoBehaviour
     // body = GetComponent<Rigidbody2D>();
   }
 
-  public IEnumerator Shoot(int direction)
+  public void Shoot(int direction)
   {
     body = GetComponent<Rigidbody2D>();
+    
     switch (direction)
     {
       case 0: {
@@ -34,9 +37,11 @@ public class Wind : MonoBehaviour
         break;
       }
     }
+    timeWhenShot = Time.time;
+  }
 
-    yield return new WaitForSeconds(1);
-    if (this != null) {
+  void Update() {
+    if (Time.time >= timeWhenShot + shootLength && this != null) {
       Destroy(gameObject);
     }
   }

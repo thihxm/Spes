@@ -44,6 +44,6 @@ public class WindShooter : MonoBehaviour, IObserver
 
   void Shoot(Transform point, int direction) {
     Wind wind = Instantiate(windPrefab, point.position, point.rotation).GetComponent<Wind>();
-    StartCoroutine(wind.Shoot(direction));
+    wind.Shoot(direction);
   }
 }
