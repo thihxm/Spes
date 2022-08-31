@@ -20,13 +20,14 @@ public class PlayerController : MonoBehaviour, IObserver
 
   #region Movement variables
   [Header("Movement variables")]
-  [SerializeField] private bool isActive = true;
+  [SerializeField] private bool canWalk = true;
   [SerializeField] private float movementVelocity = 7f;
   // [SerializeField] private float jumpVelocity = 7;
   #endregion
 
   #region Dash variables
   [Header("Dash variables")]
+  [SerializeField] private bool canDash = true;
   [SerializeField] private float dashSpeed = 22f;
   [SerializeField] private float dashLength = 0.4f;
 
@@ -39,6 +40,7 @@ public class PlayerController : MonoBehaviour, IObserver
 
   #region Jump variables
   [Header("Jump variables")]
+  [SerializeField] private bool canJump = true;
   [SerializeField] private float jumpForce = 26f;
   [SerializeField] private float fallMultiplier = 6f;
   [SerializeField] private float jumpVelocityFalloff = 14f;
@@ -58,10 +60,19 @@ public class PlayerController : MonoBehaviour, IObserver
   #region Touch Ground variables
   [Header("Touch Ground variables")]
   [SerializeField] private LayerMask groundMask;
-  [SerializeField] private float grounderOffset = -1f, grounderRadius = 0.2f;
-  [SerializeField] private float wallCheckOffset = 0.5f, wallCheckRadius = 0.05f;
-  private bool isAgainstLeftWall, isAgainstRightWall, pushingLeftWall, pushingRightWall;
+  [SerializeField] private float grounderOffset = -0.5f, grounderRadius = 0.5f;
+  [SerializeField] private float wallCheckOffsetX = 0.5f, wallCheckOffsetY = 0.6f, wallCheckDistance = 0.25f;
+  [SerializeField] private bool isAgainstLeftWall, isAgainstRightWall, isAgainstLeftWallLedge, isAgainstRightWallLedge, pushingLeftWall, pushingRightWall;
   public bool isGrounded;
+  #endregion
+
+  #region Ledge Climb variables
+  [SerializeField] private bool canLedgeClimb = true;
+  [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
+  [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
+  private Vector2 ledgePosBot, ledgePos1, ledgePos2;
+  [SerializeField] private bool shouldLedgeClimb = false;
+
   #endregion
   
   void Start() {
@@ -84,6 +95,8 @@ public class PlayerController : MonoBehaviour, IObserver
     HandleJumping();
 
     HandleDashing();
+
+    HandleLedgeClimbing();
   }
 
   void GatherInputs() {
@@ -104,15 +117,40 @@ public class PlayerController : MonoBehaviour, IObserver
       timeLeftGrounded = Time.time;
     }
 
-    isAgainstLeftWall = Physics2D.OverlapCircle(transform.position + new Vector3(-wallCheckOffset, 0), wallCheckRadius, groundMask);
-    isAgainstRightWall = Physics2D.OverlapCircle(transform.position + new Vector3(wallCheckOffset, 0), wallCheckRadius, groundMask);
-    pushingLeftWall = isAgainstLeftWall && inputX < 0.01f;
-    pushingRightWall = isAgainstRightWall && inputX > 0.01f;
+    isAgainstLeftWall = Physics2D.Raycast(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, wallCheckOffsetY), Vector2.left, wallCheckDistance, groundMask);
+    isAgainstRightWall = Physics2D.Raycast(transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY), Vector2.right, wallCheckDistance, groundMask);
+
+    isAgainstLeftWallLedge = Physics2D.Raycast(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, 0), Vector2.left, wallCheckDistance, groundMask);
+    isAgainstRightWallLedge = Physics2D.Raycast(transform.position + new Vector3(wallCheckOffsetX, 0), Vector2.right, wallCheckDistance, groundMask);
+
+    pushingLeftWall = (isAgainstLeftWall || isAgainstLeftWallLedge) && inputX < 0f;
+    pushingRightWall = (isAgainstRightWall || isAgainstRightWallLedge) && inputX > 0f;
+  }
+  
+  private void DrawGrounderGizmos() {
+    Gizmos.color = Color.red;
+    Gizmos.DrawWireSphere(transform.position + new Vector3(0, grounderOffset), grounderRadius);
+  }
+  private void DrawWallCheckGizmos() {
+    Gizmos.color = Color.magenta;
+    // Left wall check
+    Gizmos.DrawLine(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, wallCheckOffsetY), transform.position + new Vector3(-wallCheckOffsetX, wallCheckOffsetY) + new Vector3(-wallCheckDistance, 0));
+    // Right wall check
+    Gizmos.DrawLine(transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY), transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY) + new Vector3(wallCheckDistance, 0));
+
+    Gizmos.color = Color.yellow;
+    // Left ledge check
+    Gizmos.DrawLine(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, 0), transform.position + new Vector3(-wallCheckOffsetX, 0) + new Vector3(-wallCheckDistance, 0));
+    // Right ledge check
+    Gizmos.DrawLine(transform.position + new Vector3(wallCheckOffsetX, 0), transform.position + new Vector3(wallCheckOffsetX, 0) + new Vector3(wallCheckDistance, 0));
+
   }
   #endregion
 
   #region Walking
   void HandleWalking() {
+    if (!canWalk) return;
+
     if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
 
     if (inputX > 0.01f) {
@@ -128,17 +166,11 @@ public class PlayerController : MonoBehaviour, IObserver
 
   #region Jumping
   public void HandleJumping() {
+    if (!canJump) return;
+
     if (isDashing && (dashDirection == Vector2.up)) {
       return;
     }
-
-    // if (isGrounded || Time.time > timeLeftGrounded + coyoteTime) {
-    //   Jump();
-    // } else if (!isGrounded && !enableDoubleJump) {
-    //   shouldJump = false;
-    // }
-
-    // void Jump() {}
 
     if (shouldJump) {
       if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
@@ -170,6 +202,8 @@ public class PlayerController : MonoBehaviour, IObserver
 
   #region Dashing
   private void HandleDashing() {
+    if (!canDash) return;
+
     if (isDashing && Time.time >= timeStartedDash + dashLength) {
       Debug.Log("Dash finished");
       isDashing = false;
@@ -180,6 +214,57 @@ public class PlayerController : MonoBehaviour, IObserver
         hasDashed = false;
       }
     }
+  }
+  #endregion
+
+  #region Ledge Climbing
+  public void HandleLedgeClimbing() {
+    if (!canLedgeClimb && shouldLedgeClimb) return;
+
+
+    if (pushingLeftWall && !isAgainstLeftWall || pushingRightWall && !isAgainstRightWall) {
+      if (facingLeft) {
+        ledgePosBot = transform.position + new Vector3(-wallCheckOffsetX, wallCheckOffsetY);
+        
+        ledgePos1 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) - ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
+        ledgePos2 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) + ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
+      } else {
+        ledgePosBot = transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY);
+
+        ledgePos1 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) + ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
+        ledgePos2 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) - ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
+      }
+
+      shouldLedgeClimb = true;
+      canDash = false;
+      canJump = false;
+      canWalk = false;
+      jumpState = JumpState.LedgeClimbing;
+    }
+
+    if (shouldLedgeClimb) {
+      transform.position = ledgePos1;
+      StartCoroutine(LedgeClimb());
+    }
+  }
+
+  private IEnumerator LedgeClimb() {
+    yield return new WaitForSeconds(0.3f);
+    FinishLedgeClimb();
+  }
+
+  public void FinishLedgeClimb() {
+    transform.position = ledgePos2;
+    shouldLedgeClimb = false;
+    canDash = true;
+    canJump = true;
+    canWalk = true;
+    jumpState = JumpState.Grounded;
+  }
+
+  private void DrawClimbingLedgeGizmos() {
+    Gizmos.color = Color.cyan;
+    Gizmos.DrawLine(ledgePos1, ledgePos2);
   }
   #endregion
 
@@ -246,6 +331,12 @@ public class PlayerController : MonoBehaviour, IObserver
     }
   }
 
+  private void OnDrawGizmos() {
+    DrawGrounderGizmos();
+    DrawWallCheckGizmos();
+    DrawClimbingLedgeGizmos();
+  }
+
   private struct FrameInputs {
     public float X, Y;
     public int RawX, RawY;
@@ -258,6 +349,7 @@ public class PlayerController : MonoBehaviour, IObserver
     Jumping,
     DoubleJumping,
     InFlight,
-    Landed
+    Landed,
+    LedgeClimbing
   }
 }
