@@ -1,0 +1,109 @@
+{
+    "name": "TouchControls",
+    "maps": [
+        {
+            "name": "Touch",
+            "id": "793eea36-6fa9-4fbe-9c2d-b05a14439f47",
+            "actions": [
+                {
+                    "name": "TouchSwipe",
+                    "type": "PassThrough",
+                    "id": "d0925c27-126f-4d9b-b41a-91ab8dfdc94f",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "TouchTap",
+                    "type": "PassThrough",
+                    "id": "dac75d9a-c14a-4966-a4d6-5d15c52ef0e3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "0487a19d-d017-4bd3-96d0-4f92e10170c7",
+                    "path": "<Touchscreen>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchSwipe",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "Touch0",
+                    "id": "ac4a609c-6fa9-45a7-aada-2dceeaaae455",
+                    "path": "PointerInput",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "contact",
+                    "id": "d423cadf-d8cb-4fbe-824f-f9af8edd8053",
+                    "path": "<Touchscreen>/touch0/tap",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "position",
+                    "id": "a7c8084a-96d2-4c84-b51b-1bdb3d509059",
+                    "path": "<Touchscreen>/touch0/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Touch1",
+                    "id": "34900cb0-0255-4378-94fb-ada0fda8f0d6",
+                    "path": "PointerInput",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "contact",
+                    "id": "3995c937-29be-41fd-9199-4ef1596792ad",
+                    "path": "<Touchscreen>/touch1/tap",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "position",
+                    "id": "82b44630-b350-4d31-abb4-3dd17a8f7e38",
+                    "path": "<Touchscreen>/touch1/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TouchTap",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

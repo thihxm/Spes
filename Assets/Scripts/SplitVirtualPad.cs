@@ -1,7 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
+
+using TouchPhase = UnityEngine.TouchPhase;
 
 public interface IObserver
 {
@@ -22,7 +25,7 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
   public TextMeshProUGUI leftPadText;
   public TextMeshProUGUI rightPadText;
 
-  private float joyStickMaxTravel = 250f;
+  private float joyStickMaxTravel = 150f;
   public float baseSpeed = 0.8f;
   private Touch leftTouch, rightTouch;
   private Vector2 joyStickTouchStartPosition, joyStickTouchEndPosition;
@@ -30,7 +33,7 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
   private string debugLeftSideInfo;
   private string debugRightSideInfo;
 
-  private float lastX;
+  [SerializeField] private float lastX;
 
   private bool shouldCheckAction = false;
 
@@ -72,6 +75,7 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
         }
       }
 
+      #region Left Side
       if (leftTouch.phase == TouchPhase.Began) {
         joyStickTouchStartPosition = leftTouch.position;
       } else if (leftTouch.phase == TouchPhase.Moved || leftTouch.phase == TouchPhase.Ended) {
@@ -106,15 +110,16 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
         debugLeftSideInfo = "Stopped";
         player.inputX = 0;
       }
+      #endregion
 
-
+      #region Right Side
       if (rightTouch.phase == TouchPhase.Began) {
         actionTouchStartPosition = rightTouch.position;
         shouldCheckAction = true;
       } else if (rightTouch.phase == TouchPhase.Moved || rightTouch.phase == TouchPhase.Ended) {
         if (shouldCheckAction) {
-
           actionTouchEndPosition = rightTouch.position;
+
           float joyStickSensitivity = Mathf.Clamp(Mathf.Abs(actionTouchStartPosition.y - actionTouchEndPosition.y), 0, joyStickMaxTravel) / joyStickMaxTravel;
 
           float x = actionTouchEndPosition.x - actionTouchStartPosition.x;
@@ -165,6 +170,7 @@ public class SplitVirtualPad : MonoBehaviour, ISubject
         // player.actionDirection = PlayerController.Direction.Stationary;
         actionDirection = Direction.Stationary;
       }
+      #endregion
     }
 
     rightPadText.text = debugRightSideInfo;

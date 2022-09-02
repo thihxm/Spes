@@ -13,6 +13,7 @@ public class PlayerController : MonoBehaviour, IObserver
   #endregion
   
   #region Input variables
+  private InputManager inputManager;
   public Direction actionDirection;
   public Direction lastActionDirection = Direction.Stationary;
   private FrameInputs inputs;
@@ -74,6 +75,17 @@ public class PlayerController : MonoBehaviour, IObserver
   [SerializeField] private bool shouldLedgeClimb = false;
 
   #endregion
+
+  void Awake() {
+    inputManager = InputManager.Instance;
+  }
+
+  void OnEnable() {
+    Debug.Log(inputManager);
+    inputManager.OnJump += Jump;
+    // inputManager.OnDash += Dash;
+    // inputManager.OnLedgeClimb += LedgeClimb;
+  }
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
@@ -165,18 +177,15 @@ public class PlayerController : MonoBehaviour, IObserver
   #endregion
 
   #region Jumping
-  public void HandleJumping() {
+
+  public void Jump() {
     if (!canJump) return;
 
-    if (isDashing && (dashDirection == Vector2.up)) {
-      return;
-    }
+    if (isDashing && (dashDirection == Vector2.up)) return;
 
-    if (shouldJump) {
-      if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
-        if (!hasJumped || hasJumped && !hasDoubleJumped) {
-          ExecuteJump(new Vector2(body.velocity.x, jumpForce), hasJumped);
-        }
+    if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
+      if (!hasJumped || hasJumped && !hasDoubleJumped) {
+        ExecuteJump(new Vector2(body.velocity.x, jumpForce), hasJumped);
       }
     }
 
@@ -192,6 +201,34 @@ public class PlayerController : MonoBehaviour, IObserver
         jumpState = JumpState.Jumping;
       }
     }
+  }
+  public void HandleJumping() {
+    if (!canJump) return;
+
+    if (isDashing && (dashDirection == Vector2.up)) {
+      return;
+    }
+
+    // if (shouldJump) {
+    //   if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
+    //     if (!hasJumped || hasJumped && !hasDoubleJumped) {
+    //       ExecuteJump(new Vector2(body.velocity.x, jumpForce), hasJumped);
+    //     }
+    //   }
+    // }
+
+    // void ExecuteJump(Vector2 dir, bool doubleJump = false) {
+    //   body.velocity = dir;
+    //   // hasDoubleJumped = doubleJump;
+    //   hasDoubleJumped = true;
+    //   hasJumped = true;
+    //   shouldJump = false;
+    //   if (doubleJump) {
+    //     jumpState = JumpState.DoubleJumping;
+    //   } else {
+    //     jumpState = JumpState.Jumping;
+    //   }
+    // }
 
     bool isGravityEnabled = body.gravityScale > 0;
     if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Tap) {
@@ -282,7 +319,7 @@ public class PlayerController : MonoBehaviour, IObserver
     actionDirection = splitVirtualPad.actionDirection;
 
     if (isGrounded && actionDirection == Direction.Tap) {
-      shouldJump = true;
+      // shouldJump = true;
       return;
     }
 
