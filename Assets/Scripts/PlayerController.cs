@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour, IObserver
+public class PlayerController : MonoBehaviour
 {
   #region Entity variables
   private Rigidbody2D body;
@@ -23,6 +23,8 @@ public class PlayerController : MonoBehaviour, IObserver
   [Header("Movement variables")]
   [SerializeField] private bool canWalk = true;
   [SerializeField] private float movementVelocity = 7f;
+
+  private float joyStickMaxTravel = 150f;
   // [SerializeField] private float jumpVelocity = 7;
   #endregion
 
@@ -81,10 +83,9 @@ public class PlayerController : MonoBehaviour, IObserver
   }
 
   void OnEnable() {
-    Debug.Log(inputManager);
     inputManager.OnJump += Jump;
-    // inputManager.OnDash += Dash;
-    // inputManager.OnLedgeClimb += LedgeClimb;
+    inputManager.OnMove += Move;
+    inputManager.OnThrowWind += ThrowWind;
   }
   
   void Start() {
@@ -97,9 +98,6 @@ public class PlayerController : MonoBehaviour, IObserver
 
   // Update is called once per frame
   void Update() {
-
-    GatherInputs();
-
     HandleGrounding();
 
     HandleWalking();
@@ -109,10 +107,6 @@ public class PlayerController : MonoBehaviour, IObserver
     HandleDashing();
 
     HandleLedgeClimbing();
-  }
-
-  void GatherInputs() {
-    // inputs.RawX = 
   }
 
   #region Grounding
@@ -160,16 +154,31 @@ public class PlayerController : MonoBehaviour, IObserver
   #endregion
 
   #region Walking
+  public void Move(Vector2 swipeDelta) {
+    if (shouldLedgeClimb) return;
+
+    float x = swipeDelta.x;
+
+    if (swipeDelta == Vector2.zero) {
+      inputX = 0;
+      return;
+    }
+
+    inputX = x;
+  }
   void HandleWalking() {
     if (!canWalk) return;
 
     if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
+    
+    if (shouldLedgeClimb) return;
 
     if (inputX > 0.01f) {
       facingLeft = false;
     } else if (inputX < -0.01f) {
       facingLeft = true;
     }
+
     spriteRenderer.flipX = facingLeft;
 
     body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
@@ -209,29 +218,8 @@ public class PlayerController : MonoBehaviour, IObserver
       return;
     }
 
-    // if (shouldJump) {
-    //   if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
-    //     if (!hasJumped || hasJumped && !hasDoubleJumped) {
-    //       ExecuteJump(new Vector2(body.velocity.x, jumpForce), hasJumped);
-    //     }
-    //   }
-    // }
-
-    // void ExecuteJump(Vector2 dir, bool doubleJump = false) {
-    //   body.velocity = dir;
-    //   // hasDoubleJumped = doubleJump;
-    //   hasDoubleJumped = true;
-    //   hasJumped = true;
-    //   shouldJump = false;
-    //   if (doubleJump) {
-    //     jumpState = JumpState.DoubleJumping;
-    //   } else {
-    //     jumpState = JumpState.Jumping;
-    //   }
-    // }
-
     bool isGravityEnabled = body.gravityScale > 0;
-    if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0 && actionDirection == Direction.Tap) {
+    if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
   }
@@ -250,6 +238,53 @@ public class PlayerController : MonoBehaviour, IObserver
       if (isGrounded) {
         hasDashed = false;
       }
+    }
+  }
+  #endregion
+
+  #region Throw Wind
+  public void ThrowWind(Direction windDirection) {
+    if (!hasDashed && !isGrounded) {
+      switch (windDirection)
+      {
+        case Direction.Right:
+          dashDirection = Vector2.right;
+          break;
+        case Direction.Left:
+          dashDirection = Vector2.left;
+          break;
+        case Direction.Up:
+          dashDirection = Vector2.up;
+          break;
+        case Direction.Down:
+          dashDirection = Vector2.down;
+          break;
+        default:
+          return;
+      }
+
+      isDashing = true;
+      hasDashed = true;
+      timeStartedDash = Time.time;
+    }
+
+    if (isDashing) {
+      Vector2 dashVelocity = dashDirection * dashSpeed;
+
+      float xVelocity = body.velocity.x + dashVelocity.x;
+      if ((dashDirection == Vector2.left || dashDirection == Vector2.right) && Mathf.Abs(xVelocity) > dashSpeed) {
+        xVelocity = xVelocity > 0 ? dashSpeed : -dashSpeed;
+      }
+
+      float yVelocity = body.velocity.y + dashVelocity.y;
+      if ((dashDirection == Vector2.up || dashDirection == Vector2.down) && Mathf.Abs(yVelocity) > dashSpeed) {
+        yVelocity = yVelocity > 0 ? dashSpeed * 0.5f : -dashSpeed;
+      }
+      if (dashDirection == Vector2.up && yVelocity < dashSpeed) {
+        yVelocity = dashSpeed * 0.5f;
+      }
+
+      body.velocity = new Vector2(xVelocity, yVelocity);
     }
   }
   #endregion
@@ -312,61 +347,6 @@ public class PlayerController : MonoBehaviour, IObserver
     dashDirection = Vector2.zero;
   }
   #endregion
-
-  public void Trigger(ISubject subject)
-  {
-    SplitVirtualPad splitVirtualPad = (SplitVirtualPad) subject;
-    actionDirection = splitVirtualPad.actionDirection;
-
-    if (isGrounded && actionDirection == Direction.Tap) {
-      // shouldJump = true;
-      return;
-    }
-
-    if (!hasDashed && !isGrounded) {
-      Debug.Log("Will dash");
-      switch (actionDirection)
-      {
-        case Direction.Right:
-          dashDirection = Vector2.left;
-          break;
-        case Direction.Left:
-          dashDirection = Vector2.right;
-          break;
-        case Direction.Up:
-          dashDirection = Vector2.down;
-          break;
-        case Direction.Down:
-          dashDirection = Vector2.up;
-          break;
-        default:
-          return;
-      }
-
-      isDashing = true;
-      hasDashed = true;
-      timeStartedDash = Time.time;
-    }
-
-    if (isDashing) {
-      Vector2 dashVelocity = dashDirection * dashSpeed;
-
-      float xVelocity = body.velocity.x + dashVelocity.x;
-      if ((dashDirection == Vector2.left || dashDirection == Vector2.right) && Mathf.Abs(xVelocity) > dashSpeed) {
-        xVelocity = xVelocity > 0 ? dashSpeed : -dashSpeed;
-      }
-
-      float yVelocity = body.velocity.y + dashVelocity.y;
-      if ((dashDirection == Vector2.up || dashDirection == Vector2.down) && Mathf.Abs(yVelocity) > dashSpeed) {
-        yVelocity = yVelocity > 0 ? dashSpeed * 0.5f : -dashSpeed;
-      }
-      if (dashDirection == Vector2.up && yVelocity < dashSpeed) {
-        yVelocity = dashSpeed * 0.5f;
-      }
-
-      body.velocity = new Vector2(xVelocity, yVelocity);
-    }
-  }
 
   private void OnDrawGizmos() {
     DrawGrounderGizmos();

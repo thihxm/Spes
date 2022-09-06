@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WindShooter : MonoBehaviour, IObserver
+public class WindShooter : MonoBehaviour
 {
   [SerializeField] private Transform rightPoint;
   [SerializeField] private Transform leftPoint;
@@ -11,28 +11,37 @@ public class WindShooter : MonoBehaviour, IObserver
   [SerializeField] private GameObject windPrefab;
 
   private PlayerController player;
+  
+  private InputManager inputManager;
+
+  void Awake() {
+    inputManager = InputManager.Instance;
+  }
+
+  void OnEnable() {
+    inputManager.OnThrowWind += ThrowWind;
+  }
 
   void Start() {
     player = GetComponent<PlayerController>();
   }
 
-  public void Trigger(ISubject subject)
-  {
-    SplitVirtualPad splitVirtualPad = (SplitVirtualPad) subject;
+  public void ThrowWind(Direction windDirection) {
+    if (windDirection == Direction.Stationary) return;
 
     if (player.isGrounded) {  
-      if (splitVirtualPad.actionDirection == Direction.Left)
+      if (windDirection == Direction.Left)
       {
-        Shoot(leftPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == Direction.Right)
+        Shoot(leftPoint, (int) windDirection);
+      } else if (windDirection == Direction.Right)
       {
-        Shoot(rightPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == Direction.Up)
+        Shoot(rightPoint, (int) windDirection);
+      } else if (windDirection == Direction.Up)
       {
-        Shoot(topPoint, (int) splitVirtualPad.actionDirection);
-      } else if (splitVirtualPad.actionDirection == Direction.Down)
+        Shoot(topPoint, (int) windDirection);
+      } else if (windDirection == Direction.Down)
       {
-        Shoot(bottomPoint, (int) splitVirtualPad.actionDirection);
+        Shoot(bottomPoint, (int) windDirection);
       }
     }
   }

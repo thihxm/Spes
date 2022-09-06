@@ -6,12 +6,12 @@
             "id": "793eea36-6fa9-4fbe-9c2d-b05a14439f47",
             "actions": [
                 {
-                    "name": "TouchSwipe",
+                    "name": "Wind",
                     "type": "PassThrough",
-                    "id": "d0925c27-126f-4d9b-b41a-91ab8dfdc94f",
+                    "id": "f32893f3-d590-459d-aeb0-c0f141b2c744",
                     "expectedControlType": "Vector2",
                     "processors": "",
-                    "interactions": "",
+                    "interactions": "Press(behavior=2)",
                     "initialStateCheck": false
                 },
                 {
@@ -22,20 +22,18 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Move",
+                    "type": "PassThrough",
+                    "id": "7946f68f-a8db-4169-a4f2-d415d0f78c79",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
-                {
-                    "name": "",
-                    "id": "0487a19d-d017-4bd3-96d0-4f92e10170c7",
-                    "path": "<Touchscreen>/delta",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "TouchSwipe",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
                 {
                     "name": "Touch0",
                     "id": "ac4a609c-6fa9-45a7-aada-2dceeaaae455",
@@ -101,6 +99,28 @@
                     "action": "TouchTap",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "71ff2357-4c15-443a-b599-22343c5b2d08",
+                    "path": "<Gamepad>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ce38c15a-6b89-455b-93c1-9cdbf99d752e",
+                    "path": "<Gamepad>/rightStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Wind",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

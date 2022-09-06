@@ -28,12 +28,12 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
             ""id"": ""793eea36-6fa9-4fbe-9c2d-b05a14439f47"",
             ""actions"": [
                 {
-                    ""name"": ""TouchSwipe"",
+                    ""name"": ""Wind"",
                     ""type"": ""PassThrough"",
-                    ""id"": ""d0925c27-126f-4d9b-b41a-91ab8dfdc94f"",
+                    ""id"": ""f32893f3-d590-459d-aeb0-c0f141b2c744"",
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
-                    ""interactions"": """",
+                    ""interactions"": ""Press(behavior=2)"",
                     ""initialStateCheck"": false
                 },
                 {
@@ -44,20 +44,18 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Move"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""7946f68f-a8db-4169-a4f2-d415d0f78c79"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
-                {
-                    ""name"": """",
-                    ""id"": ""0487a19d-d017-4bd3-96d0-4f92e10170c7"",
-                    ""path"": ""<Touchscreen>/delta"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""TouchSwipe"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
                 {
                     ""name"": ""Touch0"",
                     ""id"": ""ac4a609c-6fa9-45a7-aada-2dceeaaae455"",
@@ -123,6 +121,28 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
                     ""action"": ""TouchTap"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""71ff2357-4c15-443a-b599-22343c5b2d08"",
+                    ""path"": ""<Gamepad>/leftStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ce38c15a-6b89-455b-93c1-9cdbf99d752e"",
+                    ""path"": ""<Gamepad>/rightStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Wind"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -131,8 +151,9 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
 }");
         // Touch
         m_Touch = asset.FindActionMap("Touch", throwIfNotFound: true);
-        m_Touch_TouchSwipe = m_Touch.FindAction("TouchSwipe", throwIfNotFound: true);
+        m_Touch_Wind = m_Touch.FindAction("Wind", throwIfNotFound: true);
         m_Touch_TouchTap = m_Touch.FindAction("TouchTap", throwIfNotFound: true);
+        m_Touch_Move = m_Touch.FindAction("Move", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -192,14 +213,16 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
     // Touch
     private readonly InputActionMap m_Touch;
     private ITouchActions m_TouchActionsCallbackInterface;
-    private readonly InputAction m_Touch_TouchSwipe;
+    private readonly InputAction m_Touch_Wind;
     private readonly InputAction m_Touch_TouchTap;
+    private readonly InputAction m_Touch_Move;
     public struct TouchActions
     {
         private @TouchControls m_Wrapper;
         public TouchActions(@TouchControls wrapper) { m_Wrapper = wrapper; }
-        public InputAction @TouchSwipe => m_Wrapper.m_Touch_TouchSwipe;
+        public InputAction @Wind => m_Wrapper.m_Touch_Wind;
         public InputAction @TouchTap => m_Wrapper.m_Touch_TouchTap;
+        public InputAction @Move => m_Wrapper.m_Touch_Move;
         public InputActionMap Get() { return m_Wrapper.m_Touch; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -209,29 +232,36 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
         {
             if (m_Wrapper.m_TouchActionsCallbackInterface != null)
             {
-                @TouchSwipe.started -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchSwipe;
-                @TouchSwipe.performed -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchSwipe;
-                @TouchSwipe.canceled -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchSwipe;
+                @Wind.started -= m_Wrapper.m_TouchActionsCallbackInterface.OnWind;
+                @Wind.performed -= m_Wrapper.m_TouchActionsCallbackInterface.OnWind;
+                @Wind.canceled -= m_Wrapper.m_TouchActionsCallbackInterface.OnWind;
                 @TouchTap.started -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchTap;
                 @TouchTap.performed -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchTap;
                 @TouchTap.canceled -= m_Wrapper.m_TouchActionsCallbackInterface.OnTouchTap;
+                @Move.started -= m_Wrapper.m_TouchActionsCallbackInterface.OnMove;
+                @Move.performed -= m_Wrapper.m_TouchActionsCallbackInterface.OnMove;
+                @Move.canceled -= m_Wrapper.m_TouchActionsCallbackInterface.OnMove;
             }
             m_Wrapper.m_TouchActionsCallbackInterface = instance;
             if (instance != null)
             {
-                @TouchSwipe.started += instance.OnTouchSwipe;
-                @TouchSwipe.performed += instance.OnTouchSwipe;
-                @TouchSwipe.canceled += instance.OnTouchSwipe;
+                @Wind.started += instance.OnWind;
+                @Wind.performed += instance.OnWind;
+                @Wind.canceled += instance.OnWind;
                 @TouchTap.started += instance.OnTouchTap;
                 @TouchTap.performed += instance.OnTouchTap;
                 @TouchTap.canceled += instance.OnTouchTap;
+                @Move.started += instance.OnMove;
+                @Move.performed += instance.OnMove;
+                @Move.canceled += instance.OnMove;
             }
         }
     }
     public TouchActions @Touch => new TouchActions(this);
     public interface ITouchActions
     {
-        void OnTouchSwipe(InputAction.CallbackContext context);
+        void OnWind(InputAction.CallbackContext context);
         void OnTouchTap(InputAction.CallbackContext context);
+        void OnMove(InputAction.CallbackContext context);
     }
 }
