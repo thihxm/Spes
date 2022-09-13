@@ -6,7 +6,7 @@ public class PlayerController : MonoBehaviour
 {
   #region Entity variables
   private Rigidbody2D body;
-  private BoxCollider2D collider;
+  private CapsuleCollider2D collider;
   SpriteRenderer spriteRenderer;
   private bool facingLeft = false;
   private float defaultGravityScale;
@@ -16,7 +16,6 @@ public class PlayerController : MonoBehaviour
   private InputManager inputManager;
   public Direction actionDirection;
   public Direction lastActionDirection = Direction.Stationary;
-  private FrameInputs inputs;
   #endregion
 
   #region Movement variables
@@ -47,7 +46,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private float jumpForce = 26f;
   [SerializeField] private float fallMultiplier = 6f;
   [SerializeField] private float jumpVelocityFalloff = 14f;
-  [SerializeField] private float coyoteTime = 0.15f;
+  [SerializeField] private float coyoteTime = 0.25f;
   [SerializeField] private bool enableDoubleJump = true;
   [SerializeField] private JumpState jumpState = JumpState.Grounded;
   private float timeLeftGrounded = -10;
@@ -64,19 +63,26 @@ public class PlayerController : MonoBehaviour
   [Header("Touch Ground variables")]
   [SerializeField] private LayerMask groundMask;
   [SerializeField] private float grounderRadius = 0.5f;
-  [SerializeField] private Vector2 grounderOffset = new Vector2(0, -0.5f);
-  [SerializeField] private float wallCheckOffsetX = 0.5f, wallCheckOffsetY = 0.6f, wallCheckDistance = 0.25f;
-  private bool isAgainstLeftWall, isAgainstRightWall, isAgainstLeftWallLedge, isAgainstRightWallLedge, pushingLeftWall, pushingRightWall;
+  [SerializeField] private Vector2 grounderOffset = new Vector2(0.025f, -0.9f);
+  [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.6f);
+  [SerializeField] private float wallCheckDistance = 0.25f;
+  private bool isAgainstWall, isAgainstWallLedge, pushingWall;
   public bool isGrounded;
   #endregion
 
   #region Ledge Climb variables
+  [Header("Ledge Climb variables")]
   [SerializeField] private bool canLedgeClimb = true;
+  [SerializeField] private float ledgeCheckOffsetY = -0.15f;
   [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
   [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
   private Vector2 ledgePosBot, ledgePos1, ledgePos2;
   [SerializeField] private bool shouldLedgeClimb = false;
 
+  #endregion
+
+  #region Animation variables
+    private Animator animator;
   #endregion
 
   void Awake() {
@@ -91,10 +97,10 @@ public class PlayerController : MonoBehaviour
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
-    collider = GetComponent<BoxCollider2D>();
-    // transform.position = new Vector3(-40, 30, 0);
+    collider = GetComponent<CapsuleCollider2D>();
     spriteRenderer = GetComponent<SpriteRenderer>();
     defaultGravityScale = body.gravityScale;
+    animator = GetComponent<Animator>();
   }
 
   // Update is called once per frame
@@ -124,40 +130,40 @@ public class PlayerController : MonoBehaviour
       timeLeftGrounded = Time.time;
     }
 
-    isAgainstLeftWall = Physics2D.Raycast(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, wallCheckOffsetY), Vector2.left, wallCheckDistance, groundMask);
-    isAgainstRightWall = Physics2D.Raycast(transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY), Vector2.right, wallCheckDistance, groundMask);
+    float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
+    Vector2 checkDirection = facingLeft ? Vector2.left : Vector2.right;
 
-    isAgainstLeftWallLedge = Physics2D.Raycast(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, 0), Vector2.left, wallCheckDistance, groundMask);
-    isAgainstRightWallLedge = Physics2D.Raycast(transform.position + new Vector3(wallCheckOffsetX, 0), Vector2.right, wallCheckDistance, groundMask);
+    isAgainstWall = Physics2D.Raycast(transform.position + new Vector3(xOffset, wallCheckOffset.y), checkDirection, wallCheckDistance, groundMask);
 
-    pushingLeftWall = (isAgainstLeftWall || isAgainstLeftWallLedge) && inputX < 0f;
-    pushingRightWall = (isAgainstRightWall || isAgainstRightWallLedge) && inputX > 0f;
+    isAgainstWallLedge = Physics2D.Raycast(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), checkDirection, wallCheckDistance, groundMask);
+
+    pushingWall = (isAgainstWall || isAgainstWallLedge) && Mathf.Abs(inputX) > 0f;
   }
   
   private void DrawGrounderGizmos() {
     Gizmos.color = Color.red;
-    Gizmos.DrawWireSphere(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius);
+    if (isGrounded) {
+      Gizmos.DrawSphere(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius);
+    } else {
+      Gizmos.DrawWireSphere(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius);
+    }
   }
   private void DrawWallCheckGizmos() {
+    float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
+    float xDistance = facingLeft ? -wallCheckDistance : wallCheckDistance;
+
     Gizmos.color = Color.magenta;
-    // Left wall check
-    Gizmos.DrawLine(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, wallCheckOffsetY), transform.position + new Vector3(-wallCheckOffsetX, wallCheckOffsetY) + new Vector3(-wallCheckDistance, 0));
-    // Right wall check
-    Gizmos.DrawLine(transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY), transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY) + new Vector3(wallCheckDistance, 0));
+    // Wall check
+    Gizmos.DrawLine(transform.position + new Vector3(xOffset, wallCheckOffset.y), transform.position + new Vector3(xOffset, wallCheckOffset.y) + new Vector3(xDistance, 0));
 
     Gizmos.color = Color.yellow;
-    // Left ledge check
-    Gizmos.DrawLine(transform.position + new Vector3(-wallCheckOffsetX + 0.1f, 0), transform.position + new Vector3(-wallCheckOffsetX, 0) + new Vector3(-wallCheckDistance, 0));
-    // Right ledge check
-    Gizmos.DrawLine(transform.position + new Vector3(wallCheckOffsetX, 0), transform.position + new Vector3(wallCheckOffsetX, 0) + new Vector3(wallCheckDistance, 0));
-
+    // Ledge check
+    Gizmos.DrawLine(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), transform.position + new Vector3(xOffset, ledgeCheckOffsetY) + new Vector3(xDistance, 0));
   }
   #endregion
 
   #region Walking
   public void Move(Vector2 swipeDelta) {
-    if (shouldLedgeClimb) return;
-
     float x = swipeDelta.x;
 
     if (swipeDelta == Vector2.zero) {
@@ -169,20 +175,25 @@ public class PlayerController : MonoBehaviour
   }
   void HandleWalking() {
     if (!canWalk) return;
+    
+    animator.SetFloat("Speed", Mathf.Abs(inputX));
 
     if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
     
     if (shouldLedgeClimb) return;
 
-    if (inputX > 0.01f) {
-      facingLeft = false;
-    } else if (inputX < -0.01f) {
-      facingLeft = true;
+    if ((inputX > 0.01f && facingLeft) || (inputX < -0.01f && !facingLeft)) {
+      Flip();
     }
 
-    spriteRenderer.flipX = facingLeft;
-
     body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
+  }
+
+  void Flip() {
+    Vector3 currentScale = transform.localScale;
+    currentScale.x *= -1;
+    transform.localScale = currentScale;
+    facingLeft = !facingLeft;
   }
   #endregion
 
@@ -272,7 +283,7 @@ public class PlayerController : MonoBehaviour
     if (isDashing) {
       Vector2 dashVelocity = dashDirection * dashSpeed;
 
-      float xVelocity = body.velocity.x + dashVelocity.x;
+      float xVelocity = body.velocity.x + dashVelocity.x; 
       if ((dashDirection == Vector2.left || dashDirection == Vector2.right) && Mathf.Abs(xVelocity) > dashSpeed) {
         xVelocity = xVelocity > 0 ? dashSpeed : -dashSpeed;
       }
@@ -282,7 +293,7 @@ public class PlayerController : MonoBehaviour
         yVelocity = yVelocity > 0 ? dashSpeed * 0.5f : -dashSpeed;
       }
       if (dashDirection == Vector2.up && yVelocity < dashSpeed) {
-        yVelocity = dashSpeed * 0.5f;
+        yVelocity = dashSpeed * 0.6f;
       }
 
       body.velocity = new Vector2(xVelocity, yVelocity);
@@ -296,14 +307,14 @@ public class PlayerController : MonoBehaviour
 
     if (!canLedgeClimb && shouldLedgeClimb) return;
 
-    if (pushingLeftWall && !isAgainstLeftWall || pushingRightWall && !isAgainstRightWall) {
+    if (pushingWall && !isAgainstWall) {
       if (facingLeft) {
-        ledgePosBot = transform.position + new Vector3(-wallCheckOffsetX, wallCheckOffsetY);
+        ledgePosBot = transform.position + new Vector3(-wallCheckOffset.x, wallCheckOffset.y);
         
         ledgePos1 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) - ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
         ledgePos2 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) + ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
       } else {
-        ledgePosBot = transform.position + new Vector3(wallCheckOffsetX, wallCheckOffsetY);
+        ledgePosBot = transform.position + new Vector3(wallCheckOffset.x, wallCheckOffset.y);
 
         ledgePos1 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) + ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
         ledgePos2 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) - ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
@@ -356,9 +367,8 @@ public class PlayerController : MonoBehaviour
     DrawClimbingLedgeGizmos();
   }
 
-  private struct FrameInputs {
-    public float X, Y;
-    public int RawX, RawY;
+  public bool IsFacingLeft() {
+    return facingLeft;
   }
 
   public enum JumpState

@@ -32,10 +32,18 @@ public class WindShooter : MonoBehaviour
     if (player.isGrounded) {  
       if (windDirection == Direction.Left)
       {
-        Shoot(leftPoint, (int) windDirection);
+        if (player.IsFacingLeft()) {
+          Shoot(leftPoint, (int) windDirection);
+        } else {
+          Shoot(rightPoint, (int) windDirection);
+        }
       } else if (windDirection == Direction.Right)
       {
-        Shoot(rightPoint, (int) windDirection);
+        if (!player.IsFacingLeft()) {
+          Shoot(rightPoint, (int) windDirection);
+        } else {
+          Shoot(leftPoint, (int) windDirection);
+        }
       } else if (windDirection == Direction.Up)
       {
         Shoot(topPoint, (int) windDirection);
