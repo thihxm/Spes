@@ -63,7 +63,7 @@ public class PlayerController : MonoBehaviour
   [Header("Touch Ground variables")]
   [SerializeField] private LayerMask groundMask;
   [SerializeField] private float grounderRadius = 0.5f;
-  [SerializeField] private Vector2 grounderOffset = new Vector2(0.025f, -0.9f);
+  [SerializeField] private Vector2 grounderOffset = new Vector2(0.055f, -0.9f);
   [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.6f);
   [SerializeField] private float wallCheckDistance = 0.25f;
   private bool isAgainstWall, isAgainstWallLedge, pushingWall;
@@ -142,10 +142,11 @@ public class PlayerController : MonoBehaviour
   
   private void DrawGrounderGizmos() {
     Gizmos.color = Color.red;
+    float xPos = collider.transform.root.position.x + (facingLeft ? -1 * grounderOffset.x : grounderOffset.x);
     if (isGrounded) {
-      Gizmos.DrawSphere(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius);
+      Gizmos.DrawSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
     } else {
-      Gizmos.DrawWireSphere(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius);
+      Gizmos.DrawWireSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
     }
   }
   private void DrawWallCheckGizmos() {
