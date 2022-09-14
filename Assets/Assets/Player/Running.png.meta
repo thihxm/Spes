@@ -146,8 +146,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 135
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -155,8 +155,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 276f424af34574d0a9e294e886151c8b
-      internalID: 1440259463
+      spriteID: 31a0605e5834c4e6dbb2966e097de8bb
+      internalID: -1670860645
       vertices: []
       indices: 
       edges: []
@@ -165,10 +165,10 @@ TextureImporter:
       name: Running_1
       rect:
         serializedVersion: 2
-        x: 158
+        x: 143
         y: 0
-        width: 139
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -176,8 +176,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: cbc81b4d79c9643a2acfa888ec004896
-      internalID: -1144103657
+      spriteID: a320c436cfd964eb0bbe4eebd4ebd23d
+      internalID: 763262723
       vertices: []
       indices: 
       edges: []
@@ -186,10 +186,10 @@ TextureImporter:
       name: Running_2
       rect:
         serializedVersion: 2
-        x: 317
+        x: 286
         y: 0
-        width: 132
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -197,8 +197,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e1c2a3b448b3c4e349820384558437b6
-      internalID: 2081786979
+      spriteID: 78647abbc7a8142e0ac0c406b4321e74
+      internalID: -484359212
       vertices: []
       indices: 
       edges: []
@@ -207,10 +207,10 @@ TextureImporter:
       name: Running_3
       rect:
         serializedVersion: 2
-        x: 475
+        x: 429
         y: 0
-        width: 138
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -218,8 +218,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: c57838c1ac2dc4e9eabdd3b50d99d722
-      internalID: -1825485488
+      spriteID: a1087bc9d6fe440d3b53c05422d4ac57
+      internalID: -2067630046
       vertices: []
       indices: 
       edges: []
@@ -228,10 +228,10 @@ TextureImporter:
       name: Running_4
       rect:
         serializedVersion: 2
-        x: 642
+        x: 572
         y: 0
-        width: 138
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -239,8 +239,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2ad14e337d6ad4f33a704d1a0dd0d5d1
-      internalID: 1556105970
+      spriteID: 0dae1211a35734a5294ec3c5a8c134b2
+      internalID: -816015622
       vertices: []
       indices: 
       edges: []
@@ -249,10 +249,10 @@ TextureImporter:
       name: Running_5
       rect:
         serializedVersion: 2
-        x: 805
+        x: 715
         y: 0
-        width: 138
-        height: 174
+        width: 143
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -260,8 +260,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 208e4c8f086b54a1cb135dd62abc694e
-      internalID: -413015244
+      spriteID: 2ac9e416d1d5642278eab9bcbfdbb485
+      internalID: 104938295
       vertices: []
       indices: 
       edges: []
@@ -277,12 +277,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Running_2: 2081786979
-      Running_3: -1825485488
-      Running_1: -1144103657
-      Running_0: 1440259463
-      Running_5: -413015244
-      Running_4: 1556105970
+      Running_2: -484359212
+      Running_3: -2067630046
+      Running_1: 763262723
+      Running_0: -1670860645
+      Running_5: 104938295
+      Running_4: -816015622
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

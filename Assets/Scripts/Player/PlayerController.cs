@@ -124,11 +124,17 @@ public class PlayerController : MonoBehaviour
       isGrounded = true;
       hasJumped = false;
       hasDashed = false;
-      jumpState = JumpState.Grounded;
+      if (jumpState != JumpState.Grounded) {
+        jumpState = JumpState.Grounded;
+        animator.SetTrigger("Landed");
+      }
+      animator.SetBool("Jumping", false);
     } else if (isGrounded && !grounded) {
       isGrounded = false;
       timeLeftGrounded = Time.time;
     }
+
+
 
     float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
     Vector2 checkDirection = facingLeft ? Vector2.left : Vector2.right;
@@ -217,6 +223,8 @@ public class PlayerController : MonoBehaviour
       hasDoubleJumped = true;
       hasJumped = true;
       shouldJump = false;
+      animator.SetBool("Jumping", true);
+
       if (doubleJump) {
         jumpState = JumpState.DoubleJumping;
       } else {
@@ -232,6 +240,12 @@ public class PlayerController : MonoBehaviour
     }
 
     bool isGravityEnabled = body.gravityScale > 0;
+
+    if (isGravityEnabled && body.velocity.y < 0 && !isGrounded && jumpState == JumpState.Jumping) {
+      jumpState = JumpState.Falling;
+      animator.SetTrigger("Falling");
+    }
+
     if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
@@ -379,6 +393,7 @@ public class PlayerController : MonoBehaviour
     Jumping,
     DoubleJumping,
     InFlight,
+    Falling,
     Landed,
     LedgeClimbing
   }
