@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1b935bc3bfd4944ab93c4a574dfd0da, type: 3}
+  m_Name: root_movement_air_jump
+  m_EditorClassIdentifier: 
+  nodes:
+  - {fileID: 11400000, guid: f43e3d12b8a0645d19660958615dface, type: 2}
+  - {fileID: 11400000, guid: 13f647b813cb54b5badab4ba882f2e50, type: 2}
+  - {fileID: 11400000, guid: ee0d49d31bb3e46848e27f8cc2649838, type: 2}
+  controlDriver:
+    name: jumpState
+    autoIncrement: 0
+    percentageBased: 0
+    guid: 0bca0a5d-3240-46c4-815f-1edc1c78c481
+  drivers:
+    keys: []
+    values: 

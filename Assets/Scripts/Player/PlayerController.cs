@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
   private Rigidbody2D body;
   private CapsuleCollider2D collider;
   SpriteRenderer spriteRenderer;
-  private bool facingLeft = false;
+  public bool facingLeft = false;
   private float defaultGravityScale;
   #endregion
   
@@ -48,7 +48,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private float jumpVelocityFalloff = 14f;
   [SerializeField] private float coyoteTime = 0.25f;
   [SerializeField] private bool enableDoubleJump = true;
-  [SerializeField] private JumpState jumpState = JumpState.Grounded;
+  [SerializeField] public JumpState jumpState = JumpState.Grounded;
   private float timeLeftGrounded = -10;
   private bool hasJumped;
   private bool hasDoubleJumped;
@@ -81,10 +81,6 @@ public class PlayerController : MonoBehaviour
 
   #endregion
 
-  #region Animation variables
-    private Animator animator;
-  #endregion
-
   void Awake() {
     inputManager = InputManager.Instance;
   }
@@ -100,7 +96,6 @@ public class PlayerController : MonoBehaviour
     collider = GetComponent<CapsuleCollider2D>();
     spriteRenderer = GetComponent<SpriteRenderer>();
     defaultGravityScale = body.gravityScale;
-    animator = GetComponent<Animator>();
   }
 
   // Update is called once per frame
@@ -126,9 +121,7 @@ public class PlayerController : MonoBehaviour
       hasDashed = false;
       if (jumpState != JumpState.Grounded) {
         jumpState = JumpState.Grounded;
-        animator.SetTrigger("Landed");
       }
-      animator.SetBool("Jumping", false);
     } else if (isGrounded && !grounded) {
       isGrounded = false;
       timeLeftGrounded = Time.time;
@@ -182,8 +175,6 @@ public class PlayerController : MonoBehaviour
   }
   void HandleWalking() {
     if (!canWalk) return;
-    
-    animator.SetFloat("Speed", Mathf.Abs(inputX));
 
     if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
     
@@ -223,7 +214,6 @@ public class PlayerController : MonoBehaviour
       hasDoubleJumped = true;
       hasJumped = true;
       shouldJump = false;
-      animator.SetBool("Jumping", true);
 
       if (doubleJump) {
         jumpState = JumpState.DoubleJumping;
@@ -241,9 +231,8 @@ public class PlayerController : MonoBehaviour
 
     bool isGravityEnabled = body.gravityScale > 0;
 
-    if (isGravityEnabled && body.velocity.y < 0 && !isGrounded && jumpState == JumpState.Jumping) {
+    if (isGravityEnabled && body.velocity.y < 0 && !isGrounded) {
       jumpState = JumpState.Falling;
-      animator.SetTrigger("Falling");
     }
 
     if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
@@ -388,13 +377,10 @@ public class PlayerController : MonoBehaviour
 
   public enum JumpState
   {
-    Grounded,
-    PrepareToJump,
-    Jumping,
-    DoubleJumping,
-    InFlight,
-    Falling,
-    Landed,
-    LedgeClimbing
+    Grounded = 0,
+    Jumping = 1,
+    DoubleJumping = 3,
+    Falling = 2,
+    LedgeClimbing = 4
   }
 }
