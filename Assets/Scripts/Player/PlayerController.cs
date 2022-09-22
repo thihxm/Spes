@@ -23,8 +23,8 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private bool canWalk = true;
   [SerializeField] private float movementVelocity = 7f;
 
-  private float joyStickMaxTravel = 150f;
   // [SerializeField] private float jumpVelocity = 7;
+  public Vector2 Velocity => body.velocity;
   #endregion
 
   #region Dash variables
@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
 
   public bool shouldDash = false;
   private bool hasDashed;
-  [SerializeField] private bool isDashing;
+  [SerializeField] public bool isDashing;
   private float timeStartedDash;
   public Vector2 dashDirection;
   #endregion

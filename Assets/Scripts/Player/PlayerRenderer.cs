@@ -26,17 +26,18 @@ namespace Player {
     private void OnDisable() {}
 
     private void Update() {
-      bool isMoving = Mathf.Abs(controller.inputX) > 0;
+      var velocity = controller.Velocity;
+      bool isMoving = Mathf.Abs(controller.inputX) > 0 && Mathf.Abs(velocity.x) > 0.01f;
 
       // reanimator.Flip = controller.facingLeft;
       reanimator.Set(Drivers.IsMoving, isMoving);
       reanimator.Set(Drivers.IsGrounded, controller.isGrounded);
       reanimator.Set(Drivers.JumpState, (int) controller.jumpState);
       
-
-      if (controller.jumpState == PlayerController.JumpState.Falling && reanimator.State.Get(Drivers.Falling, -1) == -1) {
-        reanimator.Set(Drivers.Falling, 0);
-      }
+      // Debug.Log(reanimator.State.Get(Drivers.Falling, -1));
+      // if (controller.jumpState == PlayerController.JumpState.Falling && reanimator.State.Get(Drivers.Falling, -1) == -1) {
+      //   reanimator.Set(Drivers.Falling, 0);
+      // }
 
       bool didLandInThisFrame = reanimator.WillChange(Drivers.IsGrounded, true);
 
