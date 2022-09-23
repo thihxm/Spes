@@ -11,7 +11,11 @@ namespace Player {
       public const string State = "state";
       public const string IsMoving = "isMoving";
       public const string Falling = "falling";
+      public const string Climbing = "climbing";
     }
+
+    public delegate void ClimbAction(int state);
+    public event ClimbAction OnChangeClimbState;
 
     private Reanimator reanimator;
     private PlayerController controller;
@@ -21,9 +25,13 @@ namespace Player {
       controller = GetComponent<PlayerController>();
     }
 
-    private void OnEnable() {}
+    private void OnEnable() {
+      reanimator.AddListener(Drivers.Climbing, OnClimbing);
+    }
 
-    private void OnDisable() {}
+    private void OnDisable() {
+      reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
+    }
 
     private void Update() {
       var velocity = controller.Velocity;
@@ -43,6 +51,13 @@ namespace Player {
 
       if (didLandInThisFrame) {
         reanimator.ForceRerender();
+      }
+    }
+
+    private void OnClimbing() {
+      int climbingState = reanimator.State.Get(Drivers.Climbing, 0);
+      if (climbingState > 0) {
+        OnChangeClimbState?.Invoke(climbingState);
       }
     }
   }

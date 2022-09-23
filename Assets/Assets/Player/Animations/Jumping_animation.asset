@@ -27,9 +27,8 @@ MonoBehaviour:
       values: 
   - sprite: {fileID: 21300000, guid: fc5d81124b38f4cc7938fb06e4b87ce9, type: 3}
     drivers:
-      keys:
-      - driver1
-      values: 00000000
+      keys: []
+      values: 
   - sprite: {fileID: 21300000, guid: 36479059357924d32810583cdfffca8e, type: 3}
     drivers:
       keys: []
