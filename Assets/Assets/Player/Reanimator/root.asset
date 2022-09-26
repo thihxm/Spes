@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodes:
   - {fileID: 11400000, guid: da82e96ac0c92486496ca7c29a57c4ce, type: 2}
-  - {fileID: 11400000, guid: a659e8d1e02df442aaabdb6fba4d9d8f, type: 2}
   controlDriver:
     name: state
     autoIncrement: 0

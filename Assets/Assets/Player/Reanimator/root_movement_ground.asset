@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodes:
   - {fileID: 11400000, guid: b87da0a7e8db24b41845087105cea020, type: 2}
-  - {fileID: 11400000, guid: b36712b3e45f34217b840f46dc5f63ae, type: 2}
+  - {fileID: 11400000, guid: b7acf7c4660554fb492aa4ea09565775, type: 2}
   controlDriver:
     name: isMoving
     autoIncrement: 0
+    runOnce: 0
     percentageBased: 0
     guid: dc7c6b4c-0aef-4798-95e3-81ea38a54d83
   drivers:
-    keys: []
-    values: 
+    keys:
+    - jumping
+    - falling
+    values: 0000000000000000

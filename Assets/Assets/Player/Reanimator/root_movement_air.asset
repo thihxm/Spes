@@ -14,11 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodes:
   - {fileID: 11400000, guid: a9ea3cbf4a75c45e889fbeff124d7728, type: 2}
+  - {fileID: 11400000, guid: ca57017fca3f4402aa1c0d05722df89f, type: 2}
   controlDriver:
-    name: shouldFlip
+    name: isDashing
     autoIncrement: 0
+    runOnce: 0
     percentageBased: 0
     guid: dc38f004-06e5-479a-ac0b-e99584778a83
   drivers:
-    keys: []
-    values: 
+    keys:
+    - idleTransition
+    values: 01000000

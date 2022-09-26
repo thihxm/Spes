@@ -13,12 +13,14 @@ MonoBehaviour:
   m_Name: root_movement_air_jump
   m_EditorClassIdentifier: 
   nodes:
-  - {fileID: 11400000, guid: f43e3d12b8a0645d19660958615dface, type: 2}
-  - {fileID: 11400000, guid: 13f647b813cb54b5badab4ba882f2e50, type: 2}
   - {fileID: 11400000, guid: ee0d49d31bb3e46848e27f8cc2649838, type: 2}
+  - {fileID: 11400000, guid: f43e3d12b8a0645d19660958615dface, type: 2}
+  - {fileID: 11400000, guid: b5f88fc70c9044d269466ab6fc9f9125, type: 2}
+  - {fileID: 11400000, guid: 13f647b813cb54b5badab4ba882f2e50, type: 2}
   controlDriver:
     name: jumpState
     autoIncrement: 0
+    runOnce: 0
     percentageBased: 0
     guid: 0bca0a5d-3240-46c4-815f-1edc1c78c481
   drivers:

@@ -12,9 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1b935bc3bfd4944ab93c4a574dfd0da, type: 3}
   m_Name: root_dash
   m_EditorClassIdentifier: 
-  nodes:
-  - {fileID: 0}
-  - {fileID: 0}
+  nodes: []
   controlDriver:
     name: isGrounded
     autoIncrement: 0

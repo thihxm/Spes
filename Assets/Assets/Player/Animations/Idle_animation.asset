@@ -40,6 +40,7 @@ MonoBehaviour:
   controlDriver:
     name: 
     autoIncrement: 1
+    runOnce: 0
     percentageBased: 0
     guid: 99f7a24b-9eca-4329-be2f-dc111314bfac
   drivers:

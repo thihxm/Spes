@@ -15,37 +15,30 @@ MonoBehaviour:
   cels:
   - sprite: {fileID: 21300000, guid: 3dc02e1c5a9bd4387a15d7110527abf3, type: 3}
     drivers:
-      keys:
-      - jumping
-      - falling
-      values: 0000000001000000
+      keys: []
+      values: 
   - sprite: {fileID: 21300000, guid: 6e57caf9bafb4443286e51c6175e2a10, type: 3}
     drivers:
-      keys:
-      - falling
-      values: 02000000
+      keys: []
+      values: 
   - sprite: {fileID: 21300000, guid: b49051149252749c2a7b458ff3e58da2, type: 3}
     drivers:
-      keys:
-      - falling
-      values: 03000000
+      keys: []
+      values: 
   - sprite: {fileID: 21300000, guid: a5940f95ba3034d3cbc8c991289f14f3, type: 3}
     drivers:
-      keys:
-      - idleTransition
-      - falling
-      values: 0100000004000000
+      keys: []
+      values: 
   - sprite: {fileID: 21300000, guid: 9629c5e8fb5aa4072a2bab44d75c78a3, type: 3}
     drivers:
-      keys:
-      - idleTransition
-      values: 01000000
+      keys: []
+      values: 
   controlDriver:
     name: falling
-    autoIncrement: 0
+    autoIncrement: 1
+    runOnce: 1
     percentageBased: 0
     guid: 38844f39-f28a-42d0-a8cd-baaecc2593a7
   drivers:
-    keys:
-    - falling
-    values: 00000000
+    keys: []
+    values: 

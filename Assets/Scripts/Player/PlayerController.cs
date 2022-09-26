@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Player;
 
 public class PlayerController : MonoBehaviour
 {
   #region Entity variables
   private Rigidbody2D body;
-  private CapsuleCollider2D collider;
+  private CapsuleCollider2D playerCollider;
   SpriteRenderer spriteRenderer;
   public bool facingLeft = false;
   private float defaultGravityScale;
@@ -24,8 +25,8 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private bool canWalk = true;
   [SerializeField] private float movementVelocity = 7f;
 
-  private float joyStickMaxTravel = 150f;
   // [SerializeField] private float jumpVelocity = 7;
+  public Vector2 Velocity => body.velocity;
   #endregion
 
   #region Dash variables
@@ -36,7 +37,7 @@ public class PlayerController : MonoBehaviour
 
   public bool shouldDash = false;
   private bool hasDashed;
-  [SerializeField] private bool isDashing;
+  [SerializeField] public bool isDashing;
   private float timeStartedDash;
   public Vector2 dashDirection;
   #endregion
@@ -66,7 +67,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private LayerMask groundMask;
   [SerializeField] private float grounderRadius = 0.15f;
   [SerializeField] private Vector2 grounderOffset = new Vector2(0.055f, -0.9f);
-  [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.6f);
+  [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.3f);
   [SerializeField] private float wallCheckDistance = 0.25f;
   private bool isAgainstWall, isAgainstWallLedge, pushingWall;
   public bool isGrounded;
@@ -84,7 +85,7 @@ public class PlayerController : MonoBehaviour
   #region Ledge Climb variables
   [Header("Ledge Climb variables")]
   [SerializeField] private bool canLedgeClimb = true;
-  [SerializeField] private float ledgeCheckOffsetY = -0.15f;
+  [SerializeField] private float ledgeCheckOffsetY = -0.3f;
   [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
   [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
   private Vector2 ledgePosBot, ledgePos1, ledgePos2;
@@ -92,7 +93,12 @@ public class PlayerController : MonoBehaviour
 
   #endregion
 
+  #region Animation variables
+  private PlayerRenderer playerRenderer;
+  #endregion
+
   void Awake() {
+    playerRenderer = GetComponent<PlayerRenderer>();
     inputManager = InputManager.Instance;
   }
 
@@ -100,6 +106,15 @@ public class PlayerController : MonoBehaviour
     inputManager.OnJump += Jump;
     inputManager.OnMove += Move;
     inputManager.OnThrowWind += ThrowWind;
+    playerRenderer.OnChangeClimbState += UpdateClimbPosition;
+    playerCollider = GetComponent<CapsuleCollider2D>();
+  }
+
+  void OnDisable() {
+    inputManager.OnJump -= Jump;
+    inputManager.OnMove -= Move;
+    inputManager.OnThrowWind -= ThrowWind;
+    playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
   }
 
   void OnDisable() {
@@ -110,7 +125,7 @@ public class PlayerController : MonoBehaviour
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
-    collider = GetComponent<CapsuleCollider2D>();
+    playerCollider = GetComponent<CapsuleCollider2D>();
     spriteRenderer = GetComponent<SpriteRenderer>();
     defaultGravityScale = body.gravityScale;
   }
@@ -131,6 +146,8 @@ public class PlayerController : MonoBehaviour
 
   #region Grounding
   void HandleGrounding() {
+    if (shouldLedgeClimb) return;
+
     var grounded = Physics2D.OverlapCircle(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius, groundMask);
     footObject = grounded;
 
@@ -169,7 +186,9 @@ public class PlayerController : MonoBehaviour
   
   private void DrawGrounderGizmos() {
     Gizmos.color = Color.red;
-    float xPos = collider.transform.root.position.x + (facingLeft ? -1 * grounderOffset.x : grounderOffset.x);
+    if (!playerCollider) return;
+
+    float xPos = playerCollider.transform.root.position.x + (facingLeft ? -1 * grounderOffset.x : grounderOffset.x);
     if (isGrounded) {
       Gizmos.DrawSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
     } else {
@@ -276,7 +295,6 @@ public class PlayerController : MonoBehaviour
     if (!canDash) return;
 
     if (isDashing && Time.time >= timeStartedDash + dashLength) {
-      Debug.Log("Dash finished");
       isDashing = false;
       // Clamp the velocity so they don't keep shooting off
       // body.velocity = new Vector2(body.velocity.x > dashSpeed ? dashSpeed : body.velocity.x, body.velocity.y > dashSpeed ? dashSpeed : body.velocity.y);
@@ -341,6 +359,8 @@ public class PlayerController : MonoBehaviour
 
     if (!canLedgeClimb && shouldLedgeClimb) return;
 
+    if (shouldLedgeClimb) return;
+
     if (pushingWall && !isAgainstWall) {
       if (facingLeft) {
         ledgePosBot = transform.position + new Vector3(-wallCheckOffset.x, wallCheckOffset.y);
@@ -359,20 +379,40 @@ public class PlayerController : MonoBehaviour
       canJump = false;
       canWalk = false;
       jumpState = JumpState.LedgeClimbing;
+      body.gravityScale = 0;
     }
 
     if (shouldLedgeClimb) {
+      body.velocity = Vector2.zero;
       transform.position = ledgePos1;
       StartCoroutine(LedgeClimb());
     }
   }
 
+  void UpdateClimbPosition(int state) {
+    float xMultiplier = facingLeft ? -1f : 1f;
+    if (state == 3) {
+      transform.position += new Vector3(0f * xMultiplier, .2f);
+    } else if (state == 4) {
+      // transform.position += new Vector3(.2f * xMultiplier, .1f);
+      transform.position += new Vector3(0f * xMultiplier, .1f);
+    } else if (state == 5) {
+      // transform.position += new Vector3(.3f * xMultiplier, .15f);
+      transform.position += new Vector3(.0f * xMultiplier, .15f);
+    } else if (state == 6) {
+      transform.position += new Vector3(.5f * xMultiplier, .15f);
+    } else if (state == 7) {
+      transform.position = ledgePos2;
+    }
+  }
+
   private IEnumerator LedgeClimb() {
-    yield return new WaitForSeconds(0.3f);
+    yield return new WaitForSeconds(8f/18f);
     FinishLedgeClimb();
   }
 
   public void FinishLedgeClimb() {
+    body.gravityScale = defaultGravityScale;
     transform.position = ledgePos2;
     shouldLedgeClimb = false;
     canDash = true;
@@ -409,8 +449,8 @@ public class PlayerController : MonoBehaviour
   {
     Grounded = 0,
     Jumping = 1,
-    DoubleJumping = 3,
-    Falling = 2,
-    LedgeClimbing = 4
+    LedgeClimbing = 2,
+    Falling = 3,
+    DoubleJumping = 4
   }
 }
