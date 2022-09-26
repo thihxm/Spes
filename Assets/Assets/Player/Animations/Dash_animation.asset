@@ -22,7 +22,7 @@ MonoBehaviour:
       keys: []
       values: 
   controlDriver:
-    name: dash
+    name: dashing
     autoIncrement: 1
     runOnce: 1
     percentageBased: 0
