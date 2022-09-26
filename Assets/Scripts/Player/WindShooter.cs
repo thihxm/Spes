@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class WindShooter : MonoBehaviour
 {
-  [SerializeField] private Transform rightPoint;
-  [SerializeField] private Transform leftPoint;
+  [SerializeField] private Transform frontPoint;
+  [SerializeField] private Transform backPoint;
   [SerializeField] private Transform topPoint;
   [SerializeField] private Transform bottomPoint;
   [SerializeField] private GameObject windPrefab;
@@ -33,16 +33,16 @@ public class WindShooter : MonoBehaviour
       if (windDirection == Direction.Left)
       {
         if (player.IsFacingLeft()) {
-          Shoot(leftPoint, (int) windDirection);
+          Shoot(frontPoint, (int) windDirection);
         } else {
-          Shoot(rightPoint, (int) windDirection);
+          Shoot(backPoint, (int) windDirection);
         }
       } else if (windDirection == Direction.Right)
       {
-        if (!player.IsFacingLeft()) {
-          Shoot(rightPoint, (int) windDirection);
+        if (player.IsFacingLeft()) {
+          Shoot(backPoint, (int) windDirection);
         } else {
-          Shoot(leftPoint, (int) windDirection);
+          Shoot(frontPoint, (int) windDirection);
         }
       } else if (windDirection == Direction.Up)
       {

@@ -8,6 +8,7 @@ namespace Player {
     private static class Drivers {
       public const string JumpState = "jumpState";
       public const string IsGrounded = "isGrounded";
+      public const string IsDashing = "isDashing";
       public const string State = "state";
       public const string IsMoving = "isMoving";
       public const string Falling = "falling";
@@ -40,6 +41,7 @@ namespace Player {
       // reanimator.Flip = controller.facingLeft;
       reanimator.Set(Drivers.IsMoving, isMoving);
       reanimator.Set(Drivers.IsGrounded, controller.isGrounded);
+      reanimator.Set(Drivers.IsDashing, controller.isDashing);
       reanimator.Set(Drivers.JumpState, (int) controller.jumpState);
       
       // Debug.Log(reanimator.State.Get(Drivers.Falling, -1));

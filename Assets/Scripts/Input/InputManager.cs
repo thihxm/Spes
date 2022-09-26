@@ -84,6 +84,8 @@ public class InputManager : Singleton<InputManager>
     float y = windDelta.y;
     Direction actionDirection;
 
+    Debug.Log("windDelta: " + windDelta);
+
     if (x == 0 && y == 0) {
       return Direction.Stationary;
     }

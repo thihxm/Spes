@@ -74,7 +74,7 @@ public class PlayerController : MonoBehaviour
   #region Ledge Climb variables
   [Header("Ledge Climb variables")]
   [SerializeField] private bool canLedgeClimb = true;
-  [SerializeField] private float ledgeCheckOffsetY = -0.25f;
+  [SerializeField] private float ledgeCheckOffsetY = -0.3f;
   [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
   [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
   private Vector2 ledgePosBot, ledgePos1, ledgePos2;
@@ -263,7 +263,6 @@ public class PlayerController : MonoBehaviour
     if (!canDash) return;
 
     if (isDashing && Time.time >= timeStartedDash + dashLength) {
-      Debug.Log("Dash finished");
       isDashing = false;
       // Clamp the velocity so they don't keep shooting off
       // body.velocity = new Vector2(body.velocity.x > dashSpeed ? dashSpeed : body.velocity.x, body.velocity.y > dashSpeed ? dashSpeed : body.velocity.y);
