@@ -155,6 +155,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
+    Standalone: com.Tactical-Dolphin.Spes
     iPhone: com.Tactical-Dolphin.Spes
   buildNumber:
     Standalone: 0

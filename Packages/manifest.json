@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.aarthificial.reanimation": "https://github.com/aarthificial/reanimation.git",
+    "com.aarthificial.reanimation": "https://github.com/thihxm/reanimation.git",
     "com.unity.collab-proxy": "1.17.2",
     "com.unity.feature.2d": "1.0.0",
     "com.unity.ide.rider": "3.0.15",

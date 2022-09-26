@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
   SpriteRenderer spriteRenderer;
   public bool facingLeft = false;
   private float defaultGravityScale;
+  public Vector2 Velocity => body.velocity;
   #endregion
   
   #region Input variables
@@ -52,6 +53,7 @@ public class PlayerController : MonoBehaviour
   private float timeLeftGrounded = -10;
   private bool hasJumped;
   private bool hasDoubleJumped;
+  public Vector2 velocity;
 
   public bool shouldJump = false;
 
@@ -62,12 +64,21 @@ public class PlayerController : MonoBehaviour
   #region Touch Ground variables
   [Header("Touch Ground variables")]
   [SerializeField] private LayerMask groundMask;
-  [SerializeField] private float grounderRadius = 0.5f;
+  [SerializeField] private float grounderRadius = 0.15f;
   [SerializeField] private Vector2 grounderOffset = new Vector2(0.055f, -0.9f);
   [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.6f);
   [SerializeField] private float wallCheckDistance = 0.25f;
   private bool isAgainstWall, isAgainstWallLedge, pushingWall;
   public bool isGrounded;
+  public Collider2D footObject;
+  #endregion
+
+  #region Touch Ceiling variables
+  [Header("Touch Ceiling variables")]
+  [SerializeField] private float ceilingRadius = 0.15f;
+  [SerializeField] private Vector2 ceilingOffset = new Vector2(0.055f, 0.9f);
+  public bool isAgainstCeiling;
+  public Collider2D headObject;
   #endregion
 
   #region Ledge Climb variables
@@ -90,6 +101,12 @@ public class PlayerController : MonoBehaviour
     inputManager.OnMove += Move;
     inputManager.OnThrowWind += ThrowWind;
   }
+
+  void OnDisable() {
+    inputManager.OnJump -= Jump;
+    inputManager.OnMove -= Move;
+    inputManager.OnThrowWind -= ThrowWind;
+  }
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
@@ -101,6 +118,7 @@ public class PlayerController : MonoBehaviour
   // Update is called once per frame
   void Update() {
     HandleGrounding();
+    HandleCeiling();
 
     HandleWalking();
 
@@ -114,6 +132,7 @@ public class PlayerController : MonoBehaviour
   #region Grounding
   void HandleGrounding() {
     var grounded = Physics2D.OverlapCircle(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius, groundMask);
+    footObject = grounded;
 
     if (!isGrounded && grounded) {
       isGrounded = true;
@@ -127,8 +146,6 @@ public class PlayerController : MonoBehaviour
       timeLeftGrounded = Time.time;
     }
 
-
-
     float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
     Vector2 checkDirection = facingLeft ? Vector2.left : Vector2.right;
 
@@ -138,6 +155,17 @@ public class PlayerController : MonoBehaviour
 
     pushingWall = (isAgainstWall || isAgainstWallLedge) && Mathf.Abs(inputX) > 0f;
   }
+
+  void HandleCeiling() {
+    var headButting = Physics2D.OverlapCircle(transform.position + new Vector3(ceilingOffset.x, ceilingOffset.y), ceilingRadius, groundMask);
+    headObject = headButting;
+    
+    if (!isAgainstCeiling && headButting) {
+      isAgainstCeiling = true;
+    } else if (isGrounded && !headButting) {
+      isAgainstCeiling = false;
+    }
+  }
   
   private void DrawGrounderGizmos() {
     Gizmos.color = Color.red;
@@ -146,6 +174,11 @@ public class PlayerController : MonoBehaviour
       Gizmos.DrawSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
     } else {
       Gizmos.DrawWireSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
+    }
+    if (isAgainstCeiling) {
+      Gizmos.DrawSphere(transform.position + new Vector3(xPos, ceilingOffset.y), ceilingRadius);
+    } else {
+      Gizmos.DrawWireSphere(transform.position + new Vector3(xPos, ceilingOffset.y), ceilingRadius);
     }
   }
   private void DrawWallCheckGizmos() {
@@ -164,15 +197,10 @@ public class PlayerController : MonoBehaviour
 
   #region Walking
   public void Move(Vector2 swipeDelta) {
-    float x = swipeDelta.x;
-
-    if (swipeDelta == Vector2.zero) {
-      inputX = 0;
-      return;
-    }
-
-    inputX = x;
+    inputX = swipeDelta.x;
+    inputY = swipeDelta.y;
   }
+
   void HandleWalking() {
     if (!canWalk) return;
 
@@ -201,6 +229,8 @@ public class PlayerController : MonoBehaviour
     if (!canJump) return;
 
     if (isDashing && (dashDirection == Vector2.up)) return;
+
+    if (inputY <= -0.9f) return;
 
     if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
       if (!hasJumped || hasJumped && !hasDoubleJumped) {
@@ -235,7 +265,7 @@ public class PlayerController : MonoBehaviour
       jumpState = JumpState.Falling;
     }
 
-    if (isGravityEnabled && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
+    if (isGravityEnabled && !isGrounded && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
   }

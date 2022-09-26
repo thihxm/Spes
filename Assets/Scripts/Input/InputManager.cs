@@ -53,7 +53,7 @@ public class InputManager : Singleton<InputManager>
   private void PerformMove(InputAction.CallbackContext context) {
     Vector2 joystickDelta = context.ReadValue<Vector2>();
     Vector2 xInput = new Vector2(joystickDelta.x, 0);
-    OnMove?.Invoke(xInput);
+    OnMove?.Invoke(joystickDelta);
   }
 
   private void PerformTap(InputAction.CallbackContext context) {
