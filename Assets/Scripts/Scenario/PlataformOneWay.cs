@@ -90,6 +90,7 @@ public class PlataformOneWay : MonoBehaviour
 
             shouldPass = false;
             goingUp = false;
+            playerController.canLedgeClimb = true;
         }
     }
     
@@ -102,6 +103,7 @@ public class PlataformOneWay : MonoBehaviour
 
             shouldPass = false;
             goingUp = false;
+            playerController.canLedgeClimb = true;
         }
     }
 
@@ -120,6 +122,7 @@ public class PlataformOneWay : MonoBehaviour
         Physics2D.IgnoreCollision(playerCollider, col, true);
         //Runs coroutine to allow the player to collide with the platform again
         StartCoroutine(StopIgnoring(delay));
+        playerController.canLedgeClimb = false;
     }
 
     //Coroutine that toggles the collider on the platform to allow the player to collide with it again
@@ -132,6 +135,7 @@ public class PlataformOneWay : MonoBehaviour
         Physics2D.IgnoreCollision(playerCollider, col, false);
 
         shouldPass = false;
+        playerController.canLedgeClimb = true;
         // Debug.Log(col.name + " is checking collision again!");
     }
 

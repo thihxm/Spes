@@ -23,6 +23,7 @@ MonoBehaviour:
     guid: dc7c6b4c-0aef-4798-95e3-81ea38a54d83
   drivers:
     keys:
+    - dashing
     - jumping
     - falling
-    values: 0000000000000000
+    values: 000000000000000000000000

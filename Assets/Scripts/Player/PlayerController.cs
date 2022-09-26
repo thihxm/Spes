@@ -26,7 +26,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private float movementVelocity = 7f;
 
   // [SerializeField] private float jumpVelocity = 7;
-  public Vector2 Velocity => body.velocity;
+ 
   #endregion
 
   #region Dash variables
@@ -84,7 +84,7 @@ public class PlayerController : MonoBehaviour
 
   #region Ledge Climb variables
   [Header("Ledge Climb variables")]
-  [SerializeField] private bool canLedgeClimb = true;
+  [SerializeField] public bool canLedgeClimb = true;
   [SerializeField] private float ledgeCheckOffsetY = -0.3f;
   [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
   [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
@@ -117,11 +117,7 @@ public class PlayerController : MonoBehaviour
     playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
   }
 
-  void OnDisable() {
-    inputManager.OnJump -= Jump;
-    inputManager.OnMove -= Move;
-    inputManager.OnThrowWind -= ThrowWind;
-  }
+
   
   void Start() {
     body = GetComponent<Rigidbody2D>();
@@ -357,7 +353,7 @@ public class PlayerController : MonoBehaviour
   public void HandleLedgeClimbing() {
     if (isGrounded) return;
 
-    if (!canLedgeClimb && shouldLedgeClimb) return;
+    if (!canLedgeClimb) return;
 
     if (shouldLedgeClimb) return;
 
