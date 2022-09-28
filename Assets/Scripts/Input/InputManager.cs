@@ -13,7 +13,7 @@ public class InputManager : Singleton<InputManager>
   public delegate void MoveAction(Vector2 swipeDelta);
   public event MoveAction OnMove;
 
-  public delegate void WindAction(Direction windDirection);
+  public delegate void WindAction(Direction windDirection, Vector2 swipeDelta);
   public event WindAction OnThrowWind;
   
   private TouchControls touchControls;
@@ -69,7 +69,7 @@ public class InputManager : Singleton<InputManager>
     Vector2 windDelta = context.ReadValue<Vector2>();
     if (context.canceled) {
       Direction actionDirection = GetDirection(lastWindSwipeDelta);
-      OnThrowWind?.Invoke(actionDirection);
+      OnThrowWind?.Invoke(actionDirection, lastWindSwipeDelta);
       lastWindSwipeDelta = Vector2.zero;
       return;
     }
@@ -83,8 +83,6 @@ public class InputManager : Singleton<InputManager>
     float x = windDelta.x;
     float y = windDelta.y;
     Direction actionDirection;
-
-    Debug.Log("windDelta: " + windDelta);
 
     if (x == 0 && y == 0) {
       return Direction.Stationary;

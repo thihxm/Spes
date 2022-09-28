@@ -40,6 +40,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] public bool isDashing;
   private float timeStartedDash;
   public Vector2 dashDirection;
+  [SerializeField] private float diagonalDashThreshold = 0.3f;
   #endregion
 
   #region Jump variables
@@ -105,7 +106,7 @@ public class PlayerController : MonoBehaviour
   void OnEnable() {
     inputManager.OnJump += Jump;
     inputManager.OnMove += Move;
-    inputManager.OnThrowWind += ThrowWind;
+    inputManager.OnThrowWind += Dash;
     playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     playerCollider = GetComponent<CapsuleCollider2D>();
   }
@@ -113,7 +114,7 @@ public class PlayerController : MonoBehaviour
   void OnDisable() {
     inputManager.OnJump -= Jump;
     inputManager.OnMove -= Move;
-    inputManager.OnThrowWind -= ThrowWind;
+    inputManager.OnThrowWind -= Dash;
     playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
   }
 
@@ -219,7 +220,8 @@ public class PlayerController : MonoBehaviour
   void HandleWalking() {
     if (!canWalk) return;
 
-    if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
+    if (isDashing) return;
+    // if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
     
     if (shouldLedgeClimb) return;
 
@@ -294,34 +296,17 @@ public class PlayerController : MonoBehaviour
       isDashing = false;
       // Clamp the velocity so they don't keep shooting off
       // body.velocity = new Vector2(body.velocity.x > dashSpeed ? dashSpeed : body.velocity.x, body.velocity.y > dashSpeed ? dashSpeed : body.velocity.y);
-      // body.gravityScale = defaultGravityScale;
+      body.gravityScale = defaultGravityScale;
       if (isGrounded) {
         hasDashed = false;
       }
     }
   }
-  #endregion
 
-  #region Throw Wind
-  public void ThrowWind(Direction windDirection) {
+  public void Dash(Direction windDirection, Vector2 swipeDelta) {
     if (!hasDashed && !isGrounded) {
-      switch (windDirection)
-      {
-        case Direction.Right:
-          dashDirection = Vector2.right;
-          break;
-        case Direction.Left:
-          dashDirection = Vector2.left;
-          break;
-        case Direction.Up:
-          dashDirection = Vector2.up;
-          break;
-        case Direction.Down:
-          dashDirection = Vector2.down;
-          break;
-        default:
-          return;
-      }
+      dashDirection = CalculateDashDirection(swipeDelta);
+      Debug.Log(dashDirection);
 
       isDashing = true;
       hasDashed = true;
@@ -329,23 +314,42 @@ public class PlayerController : MonoBehaviour
     }
 
     if (isDashing) {
+      body.gravityScale = 0;
       Vector2 dashVelocity = dashDirection * dashSpeed;
-
-      float xVelocity = body.velocity.x + dashVelocity.x; 
-      if ((dashDirection == Vector2.left || dashDirection == Vector2.right) && Mathf.Abs(xVelocity) > dashSpeed) {
-        xVelocity = xVelocity > 0 ? dashSpeed : -dashSpeed;
+      
+      if (dashDirection == Vector2.up) {
+        body.velocity = dashDirection * dashSpeed * 0.6f;
+      } else {
+        body.velocity = dashVelocity;
       }
-
-      float yVelocity = body.velocity.y + dashVelocity.y;
-      if ((dashDirection == Vector2.up || dashDirection == Vector2.down) && Mathf.Abs(yVelocity) > dashSpeed) {
-        yVelocity = yVelocity > 0 ? dashSpeed * 0.5f : -dashSpeed;
-      }
-      if (dashDirection == Vector2.up && yVelocity < dashSpeed) {
-        yVelocity = dashSpeed * 0.6f;
-      }
-
-      body.velocity = new Vector2(xVelocity, yVelocity);
+      Debug.Log("Velocity: " + body.velocity);      
     }
+  }
+
+  private Vector2 CalculateDashDirection(Vector2 swipeDelta) {
+    Vector2 dashDirection = Vector2.zero;
+    Debug.Log("Swipe Delta: " + swipeDelta);
+
+    if (Mathf.Abs(swipeDelta.x) >= diagonalDashThreshold && Mathf.Abs(swipeDelta.y) >= diagonalDashThreshold) {
+      float xVelocity = swipeDelta.x > 0 ? 1 : -1;
+      float yVelocity = swipeDelta.y > 0 ? 1 : -1;
+
+      dashDirection = new Vector2(xVelocity, yVelocity);
+    } else if (Mathf.Abs(swipeDelta.x) >= Mathf.Abs(swipeDelta.y)) {
+      if (swipeDelta.x > 0) {
+        dashDirection = Vector2.right;
+      } else {
+        dashDirection = Vector2.left;
+      }
+    } else {
+      if (swipeDelta.y > 0) {
+        dashDirection = Vector2.up;
+      } else {
+        dashDirection = Vector2.down;
+      }
+    }
+
+    return dashDirection;
   }
   #endregion
 

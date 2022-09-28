@@ -143,9 +143,6 @@ public class PlataformOneWay : MonoBehaviour
         float y = shouldPass ? -1f : 1f; 
         Gizmos.color = Color.green;
         Gizmos.DrawCube(transform.position + new Vector3(0f, y), new Vector3(0.25f, 2f));
-        
-        Gizmos.color = Color.red;
-        Gizmos.DrawCube(col.bounds.center, new Vector3(0.25f, 0.25f));
     }
 }
 

@@ -26,7 +26,7 @@ public class WindShooter : MonoBehaviour
     player = GetComponent<PlayerController>();
   }
 
-  public void ThrowWind(Direction windDirection) {
+  public void ThrowWind(Direction windDirection, Vector2 swipeDelta) {
     if (windDirection == Direction.Stationary) return;
 
     if (player.isGrounded) {  
