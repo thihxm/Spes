@@ -7,7 +7,6 @@ public class PlataformOneWay : MonoBehaviour
 {
     private InputManager inputManager;
     public bool shouldPass = false;
-    public bool inputDown = false;
     public bool inputTap = false;
 
     //Enum that sets up different types for one way platforms
@@ -46,33 +45,29 @@ public class PlataformOneWay : MonoBehaviour
     }
 
     void OnEnable() {
-        inputManager.OnMove += CheckInput;
-        inputManager.OnJump += JumpTapped;
+        inputManager.OnThrowWind += CheckActionDirection;
     }
 
     void OnDisable() {
-        inputManager.OnMove -= CheckInput;
-        inputManager.OnJump -= JumpTapped;
-    }    
-
-    void CheckInput(Vector2 inputDelta) {
-        inputDown = inputDelta.y <= -0.9f;
+        inputManager.OnThrowWind -= CheckActionDirection;
     }
 
-    void JumpTapped() {
-        shouldPass = inputDown;
+    void CheckActionDirection(Direction windDirection, Vector2 swipeDelta) {
+        if (windDirection == Direction.Stationary) return;
+
+        shouldPass = windDirection == Direction.Down;
     }
 
     private void Update() {
         // Teto
         if (playerController.isAgainstCeiling && playerController.headObject == col) {
-            Debug.Log("Should pass Ceiling");
             StartIgnoringCollision(delayUp);
             goingUp = true;
         }
 
         // Chão
         if (shouldPass && playerController.isGrounded && playerController.footObject == col) {
+            Debug.Log("Passou");
             StartIgnoringCollision(delayDown);
         } else {
             shouldPass = false;
@@ -91,6 +86,9 @@ public class PlataformOneWay : MonoBehaviour
             shouldPass = false;
             goingUp = false;
             playerController.canLedgeClimb = true;
+            playerController.isGrounded = true;
+        } else if (playerController.footObject == col) {
+            playerController.canGroundCheck = true;
         }
     }
     
@@ -98,43 +96,39 @@ public class PlataformOneWay : MonoBehaviour
         //Checks to see if the gameobject colliding with the platform is the player
         if (goingUp && playerController.footObject == col)
         {
-            //Checks to see if player is not above the platform so the player can stand on the platform while jumping and then checks to see if the platform will allow the player to jump up through it;
             Physics2D.IgnoreCollision(playerCollider, col, false);
 
             shouldPass = false;
             goingUp = false;
-            playerController.canLedgeClimb = true;
+            playerController.canGroundCheck = true;
+            playerController.isGrounded = true;
         }
     }
 
     private void OnCollisionExit2D(Collision2D other) {
         shouldPass = false;
-        // if (playerController.footObject == col)
-        // {
-        //     //Checks to see if player is not above the platform so the player can stand on the platform while jumping and then checks to see if the platform will allow the player to jump up through it;
-        //     Physics2D.IgnoreCollision(playerCollider, col, false);
-        // }
     }
 
     private void StartIgnoringCollision(float delay) {
-        // Debug.Log(col.name + " started ignoring collision!");
-        //Sets the player as a gameobject that should ignore the platform collider so the player can pass through
         Physics2D.IgnoreCollision(playerCollider, col, true);
-        //Runs coroutine to allow the player to collide with the platform again
+
         StartCoroutine(StopIgnoring(delay));
         playerController.canLedgeClimb = false;
+        playerController.canGroundCheck = false;
+        playerController.isGrounded = false;
     }
 
     //Coroutine that toggles the collider on the platform to allow the player to collide with it again
     private IEnumerator StopIgnoring(float delay)
     {
-        //Waits a short delay setup at the top of this script in the variables
         yield return new WaitForSeconds(delay);
+        Debug.Log(col.name + " stopped ignoring collision!");
 
-        //Sets the player as a gameobject that should collide the platform collider so the player can stand on it again
         Physics2D.IgnoreCollision(playerCollider, col, false);
 
         shouldPass = false;
+        goingUp = false;
+        playerController.canGroundCheck = true;
         playerController.canLedgeClimb = true;
         // Debug.Log(col.name + " is checking collision again!");
     }

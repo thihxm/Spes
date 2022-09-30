@@ -7,7 +7,6 @@ public class WindShooter : MonoBehaviour
   [SerializeField] private Transform frontPoint;
   [SerializeField] private Transform backPoint;
   [SerializeField] private Transform topPoint;
-  [SerializeField] private Transform bottomPoint;
   [SerializeField] private GameObject windPrefab;
 
   private PlayerController player;
@@ -47,9 +46,6 @@ public class WindShooter : MonoBehaviour
       } else if (windDirection == Direction.Up)
       {
         Shoot(topPoint, (int) windDirection);
-      } else if (windDirection == Direction.Down)
-      {
-        Shoot(bottomPoint, (int) windDirection);
       }
     }
   }

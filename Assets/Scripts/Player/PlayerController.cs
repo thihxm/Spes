@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
   private CapsuleCollider2D playerCollider;
   SpriteRenderer spriteRenderer;
   public bool facingLeft = false;
+  public bool shouldFlip = false;
   private float defaultGravityScale;
   public Vector2 Velocity => body.velocity;
   #endregion
@@ -52,10 +53,12 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private float coyoteTime = 0.25f;
   [SerializeField] private bool enableDoubleJump = true;
   [SerializeField] public JumpState jumpState = JumpState.Grounded;
+  [SerializeField] private float jumpBuffer = 0.1f;
+  [SerializeField] private float lastJumpPressed;
+  private bool HasBufferedJump => isGrounded && lastJumpPressed + jumpBuffer > Time.time;
   private float timeLeftGrounded = -10;
   private bool hasJumped;
   private bool hasDoubleJumped;
-  public Vector2 velocity;
 
   public bool shouldJump = false;
 
@@ -71,6 +74,7 @@ public class PlayerController : MonoBehaviour
   [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.3f);
   [SerializeField] private float wallCheckDistance = 0.25f;
   private bool isAgainstWall, isAgainstWallLedge, pushingWall;
+  public bool canGroundCheck = true;
   public bool isGrounded;
   public Collider2D footObject;
   #endregion
@@ -144,9 +148,12 @@ public class PlayerController : MonoBehaviour
   #region Grounding
   void HandleGrounding() {
     if (shouldLedgeClimb) return;
+    if (!canGroundCheck) return;
 
     var grounded = Physics2D.OverlapCircle(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius, groundMask);
     footObject = grounded;
+
+    // if (grounded && grounded.CompareTag("TraversablePlatform") && Velocity.y != 0) return;
 
     if (!isGrounded && grounded) {
       isGrounded = true;
@@ -226,23 +233,29 @@ public class PlayerController : MonoBehaviour
     if (shouldLedgeClimb) return;
 
     if ((inputX > 0.01f && facingLeft) || (inputX < -0.01f && !facingLeft)) {
-      Flip();
+      shouldFlip = true;
+      if (!isGrounded) {
+        Flip();
+      }
     }
 
     body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
   }
 
-  void Flip() {
+  public void Flip() {
     Vector3 currentScale = transform.localScale;
     currentScale.x *= -1;
     transform.localScale = currentScale;
     facingLeft = !facingLeft;
+    shouldFlip = false;
   }
   #endregion
 
   #region Jumping
 
   public void Jump() {
+    lastJumpPressed = Time.time;
+
     if (!canJump) return;
 
     if (isDashing && (dashDirection == Vector2.up)) return;
@@ -282,7 +295,7 @@ public class PlayerController : MonoBehaviour
       jumpState = JumpState.Falling;
     }
 
-    if (isGravityEnabled && !isGrounded && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0) {
+    if (isGravityEnabled && !isGrounded && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0|| HasBufferedJump) {
       body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
     }
   }
@@ -306,7 +319,6 @@ public class PlayerController : MonoBehaviour
   public void Dash(Direction windDirection, Vector2 swipeDelta) {
     if (!hasDashed && !isGrounded) {
       dashDirection = CalculateDashDirection(swipeDelta);
-      Debug.Log(dashDirection);
 
       isDashing = true;
       hasDashed = true;
@@ -322,13 +334,11 @@ public class PlayerController : MonoBehaviour
       } else {
         body.velocity = dashVelocity;
       }
-      Debug.Log("Velocity: " + body.velocity);      
     }
   }
 
   private Vector2 CalculateDashDirection(Vector2 swipeDelta) {
     Vector2 dashDirection = Vector2.zero;
-    Debug.Log("Swipe Delta: " + swipeDelta);
 
     if (Mathf.Abs(swipeDelta.x) >= diagonalDashThreshold && Mathf.Abs(swipeDelta.y) >= diagonalDashThreshold) {
       float xVelocity = swipeDelta.x > 0 ? 1 : -1;

@@ -13,6 +13,8 @@ namespace Player {
       public const string IsMoving = "isMoving";
       public const string Falling = "falling";
       public const string Climbing = "climbing";
+      public const string ShouldFlip = "shouldFlip";
+      public const string FlipEvent = "flipEvent";
     }
 
     public delegate void ClimbAction(int state);
@@ -28,10 +30,12 @@ namespace Player {
 
     private void OnEnable() {
       reanimator.AddListener(Drivers.Climbing, OnClimbing);
+      reanimator.AddListener(Drivers.FlipEvent, FlipEvent);
     }
 
     private void OnDisable() {
       reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
+      reanimator.RemoveListener(Drivers.FlipEvent, FlipEvent);
     }
 
     private void Update() {
@@ -43,6 +47,7 @@ namespace Player {
       reanimator.Set(Drivers.IsGrounded, controller.isGrounded);
       reanimator.Set(Drivers.IsDashing, controller.isDashing);
       reanimator.Set(Drivers.JumpState, (int) controller.jumpState);
+      reanimator.Set(Drivers.ShouldFlip, controller.shouldFlip);
       
       // Debug.Log(reanimator.State.Get(Drivers.Falling, -1));
       // if (controller.jumpState == PlayerController.JumpState.Falling && reanimator.State.Get(Drivers.Falling, -1) == -1) {
@@ -54,6 +59,10 @@ namespace Player {
       if (didLandInThisFrame) {
         reanimator.ForceRerender();
       }
+    }
+
+    private void FlipEvent() {
+      controller.Flip();
     }
 
     private void OnClimbing() {
