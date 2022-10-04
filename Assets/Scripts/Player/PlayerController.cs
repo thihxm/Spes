@@ -60,7 +60,7 @@ namespace Player
       CalculateJumpApex(); // Affects fall speed, so calculate before gravity
       CalculateGravity(); // Vertical movement
       CalculateJump(); // Possibly overrides vertical
-      CalculateLedgeClimbing();
+      CalculateLedgeClimb();
 
       MoveCharacter(); // Actually perform the axis movement
     }
@@ -180,7 +180,7 @@ namespace Player
 
     private void OnDrawGizmos()
     {
-      DrawClimbingLedgeGizmos();
+      DrawLedgeClimbingGizmos();
       DrawWallCheckGizmos();
 
       // Bounds
@@ -431,7 +431,7 @@ namespace Player
     #endregion
 
     #region Ledge Climbing
-    public void CalculateLedgeClimbing()
+    public void CalculateLedgeClimb()
     {
       if (Grounded) return;
 
@@ -517,7 +517,7 @@ namespace Player
       jumpState = JumpState.Grounded;
     }
 
-    private void DrawClimbingLedgeGizmos()
+    private void DrawLedgeClimbingGizmos()
     {
       Gizmos.color = Color.cyan;
       Gizmos.DrawLine(ledgeStartPosition, ledgeEndPosition);
