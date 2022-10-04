@@ -1,466 +1,540 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using Player;
 
-public class PlayerController : MonoBehaviour
+
+namespace Player
 {
-  #region Entity variables
-  private Rigidbody2D body;
-  private CapsuleCollider2D playerCollider;
-  SpriteRenderer spriteRenderer;
-  public bool facingLeft = false;
-  public bool shouldFlip = false;
-  private float defaultGravityScale;
-  public Vector2 Velocity => body.velocity;
-  #endregion
-  
-  #region Input variables
-  private InputManager inputManager;
-  public Direction actionDirection;
-  public Direction lastActionDirection = Direction.Stationary;
-  #endregion
+  public class PlayerController : MonoBehaviour, IPlayerController
+  {
+    // Public for external hooks
+    public Vector3 Velocity { get; private set; }
+    public FrameInput MovementInput { get; private set; }
+    public bool JumpingThisFrame { get; private set; }
+    public bool LandingThisFrame { get; private set; }
+    public Vector3 RawMovement { get; private set; }
+    public bool Grounded => collisionDown;
+    public JumpState JumpState => jumpState;
 
-  #region Movement variables
-  [Header("Movement variables")]
-  [SerializeField] private bool canWalk = true;
-  [SerializeField] private float movementVelocity = 7f;
+    private Vector3 lastPosition;
+    private float currentHorizontalSpeed, currentVerticalSpeed;
 
-  // [SerializeField] private float jumpVelocity = 7;
- 
-  #endregion
+    #region Animation variables
+    private PlayerRenderer playerRenderer;
+    #endregion
 
-  #region Dash variables
-  [Header("Dash variables")]
-  [SerializeField] private bool canDash = true;
-  [SerializeField] private float dashSpeed = 22f;
-  [SerializeField] private float dashLength = 0.4f;
+    // This is horrible, but for some reason colliders are not fully established when update starts...
+    private bool active;
+    void Awake() => Invoke(nameof(Activate), 0.5f);
+    void Activate() => active = true;
+    void OnEnable()
+    {
+      playerRenderer = GetComponent<PlayerRenderer>();
+      inputManager = InputManager.Instance;
+      inputManager.OnMove += HandleMoveInput;
+      inputManager.OnJump += HandleJumpInput;
+      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
+    }
 
-  public bool shouldDash = false;
-  private bool hasDashed;
-  [SerializeField] public bool isDashing;
-  private float timeStartedDash;
-  public Vector2 dashDirection;
-  [SerializeField] private float diagonalDashThreshold = 0.3f;
-  #endregion
+    void OnDisable()
+    {
+      inputManager.OnMove -= HandleMoveInput;
+      inputManager.OnJump -= HandleJumpInput;
+      playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
+    }
 
-  #region Jump variables
-  [Header("Jump variables")]
-  [SerializeField] private bool canJump = true;
-  [SerializeField] private float jumpForce = 26f;
-  [SerializeField] private float fallMultiplier = 6f;
-  [SerializeField] private float jumpVelocityFalloff = 14f;
-  [SerializeField] private float coyoteTime = 0.25f;
-  [SerializeField] private bool enableDoubleJump = true;
-  [SerializeField] public JumpState jumpState = JumpState.Grounded;
-  [SerializeField] private float jumpBuffer = 0.1f;
-  [SerializeField] private float lastJumpPressed;
-  private bool HasBufferedJump => isGrounded && lastJumpPressed + jumpBuffer > Time.time;
-  private float timeLeftGrounded = -10;
-  private bool hasJumped;
-  private bool hasDoubleJumped;
+    private void Update()
+    {
+      if (!active) return;
+      // Calculate velocity
+      Velocity = (transform.position - lastPosition) / Time.deltaTime;
+      lastPosition = transform.position;
 
-  public bool shouldJump = false;
+      // GatherInput();
+      RunCollisionChecks();
+      RunWallCollisionChecks();
 
-  public float inputX = 0f;
-  public float inputY = 0f;
-  #endregion
+      CalculateWalk(); // Horizontal movement
+      CalculateVelocityDirection(); // Vertical movement
+      CalculateJumpApex(); // Affects fall speed, so calculate before gravity
+      CalculateGravity(); // Vertical movement
+      CalculateJump(); // Possibly overrides vertical
+      CalculateLedgeClimbing();
 
-  #region Touch Ground variables
-  [Header("Touch Ground variables")]
-  [SerializeField] private LayerMask groundMask;
-  [SerializeField] private float grounderRadius = 0.15f;
-  [SerializeField] private Vector2 grounderOffset = new Vector2(0.055f, -0.9f);
-  [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.3f);
-  [SerializeField] private float wallCheckDistance = 0.25f;
-  private bool isAgainstWall, isAgainstWallLedge, pushingWall;
-  public bool canGroundCheck = true;
-  public bool isGrounded;
-  public Collider2D footObject;
-  #endregion
-
-  #region Touch Ceiling variables
-  [Header("Touch Ceiling variables")]
-  [SerializeField] private float ceilingRadius = 0.15f;
-  [SerializeField] private Vector2 ceilingOffset = new Vector2(0.055f, 0.9f);
-  public bool isAgainstCeiling;
-  public Collider2D headObject;
-  #endregion
-
-  #region Ledge Climb variables
-  [Header("Ledge Climb variables")]
-  [SerializeField] public bool canLedgeClimb = true;
-  [SerializeField] private float ledgeCheckOffsetY = -0.3f;
-  [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
-  [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
-  private Vector2 ledgePosBot, ledgePos1, ledgePos2;
-  [SerializeField] private bool shouldLedgeClimb = false;
-
-  #endregion
-
-  #region Animation variables
-  private PlayerRenderer playerRenderer;
-  #endregion
-
-  void Awake() {
-    playerRenderer = GetComponent<PlayerRenderer>();
-    inputManager = InputManager.Instance;
-  }
-
-  void OnEnable() {
-    inputManager.OnJump += Jump;
-    inputManager.OnMove += Move;
-    inputManager.OnThrowWind += Dash;
-    playerRenderer.OnChangeClimbState += UpdateClimbPosition;
-    playerCollider = GetComponent<CapsuleCollider2D>();
-  }
-
-  void OnDisable() {
-    inputManager.OnJump -= Jump;
-    inputManager.OnMove -= Move;
-    inputManager.OnThrowWind -= Dash;
-    playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
-  }
+      MoveCharacter(); // Actually perform the axis movement
+    }
 
 
-  
-  void Start() {
-    body = GetComponent<Rigidbody2D>();
-    playerCollider = GetComponent<CapsuleCollider2D>();
-    spriteRenderer = GetComponent<SpriteRenderer>();
-    defaultGravityScale = body.gravityScale;
-  }
+    #region Gather Input
+    private InputManager inputManager;
+    private bool jumpPressed = false;
 
-  // Update is called once per frame
-  void Update() {
-    HandleGrounding();
-    HandleCeiling();
+    public void HandleMoveInput(Vector2 swipeDelta)
+    {
+      MovementInput = new FrameInput
+      {
+        X = swipeDelta.x,
+        Y = swipeDelta.y
+      };
+    }
 
-    HandleWalking();
+    private void HandleJumpInput()
+    {
+      jumpPressed = true;
+      lastJumpPressed = Time.time;
+    }
 
-    HandleJumping();
+    #endregion
 
-    HandleDashing();
+    #region Collisions
 
-    HandleLedgeClimbing();
-  }
+    [Header("COLLISION")][SerializeField] private Bounds characterBounds;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private int detectorCount = 3;
+    [SerializeField] private float detectionRayLength = 0.1f;
+    [SerializeField][Range(0.1f, 0.3f)] private float rayBuffer = 0.1f; // Prevents side detectors hitting the ground
 
-  #region Grounding
-  void HandleGrounding() {
-    if (shouldLedgeClimb) return;
-    if (!canGroundCheck) return;
+    private RayRange raysUp, raysRight, raysDown, raysLeft;
+    private bool collisionUp, collisionRight, collisionDown, collisionLeft;
 
-    var grounded = Physics2D.OverlapCircle(transform.position + new Vector3(grounderOffset.x, grounderOffset.y), grounderRadius, groundMask);
-    footObject = grounded;
+    private float timeLeftGrounded;
 
-    // if (grounded && grounded.CompareTag("TraversablePlatform") && Velocity.y != 0) return;
+    #region Wall Check
+    [Header("WALL CHECK")]
+    [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.3f);
+    [SerializeField] private float wallCheckDistance = 0.25f;
+    private bool isAgainstWall, isAgainstWallLedge, pushingWall;
+    [SerializeField] public bool canLedgeClimb = true;
+    [SerializeField] private float ledgeCheckOffsetY = -0.3f;
+    [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
+    [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
+    private Vector2 ledgePositionBottom, ledgeStartPosition, ledgeEndPosition;
+    [SerializeField] private bool isLedgeClimbing = false;
 
-    if (!isGrounded && grounded) {
-      isGrounded = true;
-      hasJumped = false;
-      hasDashed = false;
-      if (jumpState != JumpState.Grounded) {
+    #endregion
+
+    void RunWallCollisionChecks()
+    {
+      if (isLedgeClimbing) return;
+
+      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
+      Vector2 checkDirection = facingRight ? Vector2.right : Vector2.left;
+
+      isAgainstWall = Physics2D.Raycast(transform.position + new Vector3(xOffset, wallCheckOffset.y), checkDirection, wallCheckDistance, groundLayer);
+
+      isAgainstWallLedge = Physics2D.Raycast(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), checkDirection, wallCheckDistance, groundLayer);
+
+      pushingWall = (isAgainstWall || isAgainstWallLedge) && Mathf.Abs(MovementInput.X) > 0f;
+    }
+
+    // We use these raycast checks for pre-collision information
+    private void RunCollisionChecks()
+    {
+      // Generate ray ranges. 
+      CalculateRayRanged();
+
+      // Ground
+      LandingThisFrame = false;
+      var groundedCheck = RunDetection(raysDown);
+      if (collisionDown && !groundedCheck) timeLeftGrounded = Time.time; // Only trigger when first leaving
+      else if (!collisionDown && groundedCheck)
+      {
+        coyoteUsable = true; // Only trigger when first touching
+        LandingThisFrame = true;
+      }
+
+      collisionDown = groundedCheck;
+
+      // The rest
+      collisionUp = RunDetection(raysUp);
+      collisionLeft = RunDetection(raysLeft);
+      collisionRight = RunDetection(raysRight);
+
+      bool RunDetection(RayRange range)
+      {
+        return EvaluateRayPositions(range).Any(point => Physics2D.Raycast(point, range.Dir, detectionRayLength, groundLayer));
+      }
+    }
+
+    private void CalculateRayRanged()
+    {
+      // This is crying out for some kind of refactor. 
+      var b = new Bounds(transform.position, characterBounds.size);
+
+      raysDown = new RayRange(b.min.x + rayBuffer, b.min.y, b.max.x - rayBuffer, b.min.y, Vector2.down);
+      raysUp = new RayRange(b.min.x + rayBuffer, b.max.y, b.max.x - rayBuffer, b.max.y, Vector2.up);
+      raysLeft = new RayRange(b.min.x, b.min.y + rayBuffer, b.min.x, b.max.y - rayBuffer, Vector2.left);
+      raysRight = new RayRange(b.max.x, b.min.y + rayBuffer, b.max.x, b.max.y - rayBuffer, Vector2.right);
+    }
+
+
+    private IEnumerable<Vector2> EvaluateRayPositions(RayRange range)
+    {
+      for (var i = 0; i < detectorCount; i++)
+      {
+        var t = (float)i / (detectorCount - 1);
+        yield return Vector2.Lerp(range.Start, range.End, t);
+      }
+    }
+
+    private void OnDrawGizmos()
+    {
+      DrawClimbingLedgeGizmos();
+      DrawWallCheckGizmos();
+
+      // Bounds
+      Gizmos.color = Color.yellow;
+      Gizmos.DrawWireCube(transform.position + characterBounds.center, characterBounds.size);
+
+      // Rays
+      if (!Application.isPlaying)
+      {
+        CalculateRayRanged();
+        Gizmos.color = Color.blue;
+        foreach (var range in new List<RayRange> { raysUp, raysRight, raysDown, raysLeft })
+        {
+          foreach (var point in EvaluateRayPositions(range))
+          {
+            Gizmos.DrawRay(point, range.Dir * detectionRayLength);
+          }
+        }
+      }
+
+      if (!Application.isPlaying) return;
+
+      // Draw the future position. Handy for visualizing gravity
+      Gizmos.color = Color.red;
+      var move = new Vector3(currentHorizontalSpeed, currentVerticalSpeed) * Time.deltaTime;
+      Gizmos.DrawWireCube(transform.position + move, characterBounds.size);
+    }
+
+    #endregion
+
+
+    #region Walk
+
+    [Header("WALKING")][SerializeField] private float acceleration = 90;
+    [SerializeField] private float moveClamp = 13;
+    [SerializeField] private float deAcceleration = 60f;
+    [SerializeField] private float apexBonus = 2;
+    private bool enableWalk = true;
+
+    private void CalculateWalk()
+    {
+      if (!enableWalk) return;
+
+      if (MovementInput.X != 0)
+      {
+        // Set horizontal move speed
+        currentHorizontalSpeed += MovementInput.X * acceleration * Time.deltaTime;
+
+        // clamped by max frame movement
+        currentHorizontalSpeed = Mathf.Clamp(currentHorizontalSpeed, -moveClamp, moveClamp);
+
+        // Apply bonus at the apex of a jump
+        var apexBonus = Mathf.Sign(MovementInput.X) * this.apexBonus * apexPoint;
+        currentHorizontalSpeed += apexBonus * Time.deltaTime;
+
+        // Flip logic
+        if ((MovementInput.X > 0.01f && !facingRight) || (MovementInput.X < -0.01f && facingRight))
+        {
+          shouldFlip = true;
+          if (!Grounded)
+          {
+            Flip();
+          }
+        }
+      }
+      else
+      {
+        // No input. Let's slow the character down
+        currentHorizontalSpeed = Mathf.MoveTowards(currentHorizontalSpeed, 0, deAcceleration * Time.deltaTime);
+      }
+
+      if (currentHorizontalSpeed > 0 && collisionRight || currentHorizontalSpeed < 0 && collisionLeft)
+      {
+        // Don't walk through walls
+        currentHorizontalSpeed = 0;
+      }
+    }
+
+    #endregion
+
+    #region Gravity
+
+    [Header("GRAVITY")]
+    [SerializeField] private float fallClamp = -40f;
+    [SerializeField] private float minFallSpeed = 80f;
+    [SerializeField] private float maxFallSpeed = 120f;
+    private float fallSpeed;
+    private bool enableGravity = true;
+
+    private void CalculateGravity()
+    {
+      if (!enableGravity) return;
+
+      if (collisionDown)
+      {
+        // Move out of the ground
+        if (currentVerticalSpeed < 0) currentVerticalSpeed = 0;
         jumpState = JumpState.Grounded;
       }
-    } else if (isGrounded && !grounded) {
-      isGrounded = false;
-      timeLeftGrounded = Time.time;
-    }
+      else
+      {
+        // Add downward force while ascending if we ended the jump early
+        var fallSpeed = endedJumpEarly && currentVerticalSpeed > 0 ? this.fallSpeed * jumpEndEarlyGravityModifier : this.fallSpeed;
 
-    float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
-    Vector2 checkDirection = facingLeft ? Vector2.left : Vector2.right;
+        // Fall
+        currentVerticalSpeed -= fallSpeed * Time.deltaTime;
 
-    isAgainstWall = Physics2D.Raycast(transform.position + new Vector3(xOffset, wallCheckOffset.y), checkDirection, wallCheckDistance, groundMask);
-
-    isAgainstWallLedge = Physics2D.Raycast(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), checkDirection, wallCheckDistance, groundMask);
-
-    pushingWall = (isAgainstWall || isAgainstWallLedge) && Mathf.Abs(inputX) > 0f;
-  }
-
-  void HandleCeiling() {
-    var headButting = Physics2D.OverlapCircle(transform.position + new Vector3(ceilingOffset.x, ceilingOffset.y), ceilingRadius, groundMask);
-    headObject = headButting;
-    
-    if (!isAgainstCeiling && headButting) {
-      isAgainstCeiling = true;
-    } else if (isGrounded && !headButting) {
-      isAgainstCeiling = false;
-    }
-  }
-  
-  private void DrawGrounderGizmos() {
-    Gizmos.color = Color.red;
-    if (!playerCollider) return;
-
-    float xPos = playerCollider.transform.root.position.x + (facingLeft ? -1 * grounderOffset.x : grounderOffset.x);
-    if (isGrounded) {
-      Gizmos.DrawSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
-    } else {
-      Gizmos.DrawWireSphere(transform.position + new Vector3(xPos, grounderOffset.y), grounderRadius);
-    }
-    if (isAgainstCeiling) {
-      Gizmos.DrawSphere(transform.position + new Vector3(xPos, ceilingOffset.y), ceilingRadius);
-    } else {
-      Gizmos.DrawWireSphere(transform.position + new Vector3(xPos, ceilingOffset.y), ceilingRadius);
-    }
-  }
-  private void DrawWallCheckGizmos() {
-    float xOffset = facingLeft ? -wallCheckOffset.x : wallCheckOffset.x;
-    float xDistance = facingLeft ? -wallCheckDistance : wallCheckDistance;
-
-    Gizmos.color = Color.magenta;
-    // Wall check
-    Gizmos.DrawLine(transform.position + new Vector3(xOffset, wallCheckOffset.y), transform.position + new Vector3(xOffset, wallCheckOffset.y) + new Vector3(xDistance, 0));
-
-    Gizmos.color = Color.yellow;
-    // Ledge check
-    Gizmos.DrawLine(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), transform.position + new Vector3(xOffset, ledgeCheckOffsetY) + new Vector3(xDistance, 0));
-  }
-  #endregion
-
-  #region Walking
-  public void Move(Vector2 swipeDelta) {
-    inputX = swipeDelta.x;
-    inputY = swipeDelta.y;
-  }
-
-  void HandleWalking() {
-    if (!canWalk) return;
-
-    if (isDashing) return;
-    // if (isDashing && (dashDirection == Vector2.left || dashDirection == Vector2.right)) return;
-    
-    if (shouldLedgeClimb) return;
-
-    if ((inputX > 0.01f && facingLeft) || (inputX < -0.01f && !facingLeft)) {
-      shouldFlip = true;
-      if (!isGrounded) {
-        Flip();
+        // Clamp
+        if (currentVerticalSpeed < fallClamp) currentVerticalSpeed = fallClamp;
       }
     }
 
-    body.velocity = new Vector2(inputX * movementVelocity, body.velocity.y);
-  }
+    #endregion
 
-  public void Flip() {
-    Vector3 currentScale = transform.localScale;
-    currentScale.x *= -1;
-    transform.localScale = currentScale;
-    facingLeft = !facingLeft;
-    shouldFlip = false;
-  }
-  #endregion
+    #region Jump
 
-  #region Jumping
+    [Header("JUMPING")][SerializeField] private float jumpHeight = 30;
+    [SerializeField] private float jumpApexThreshold = 10f;
+    [SerializeField] private float coyoteTimeThreshold = 0.1f;
+    [SerializeField] private float jumpBuffer = 0.1f;
+    [SerializeField] private float jumpEndEarlyGravityModifier = 3;
+    private bool coyoteUsable;
+    private bool endedJumpEarly = true;
+    private float apexPoint; // Becomes 1 at the apex of a jump
+    private float lastJumpPressed;
+    private bool CanUseCoyote => coyoteUsable && !collisionDown && timeLeftGrounded + coyoteTimeThreshold > Time.time;
+    private bool HasBufferedJump => collisionDown && lastJumpPressed + jumpBuffer > Time.time;
 
-  public void Jump() {
-    lastJumpPressed = Time.time;
+    private JumpState jumpState;
+    private bool enableJump = true;
 
-    if (!canJump) return;
-
-    if (isDashing && (dashDirection == Vector2.up)) return;
-
-    if (inputY <= -0.9f) return;
-
-    if (isGrounded || Time.time < timeLeftGrounded + coyoteTime || enableDoubleJump && !hasDoubleJumped) {
-      if (!hasJumped || hasJumped && !hasDoubleJumped) {
-        ExecuteJump(new Vector2(body.velocity.x, jumpForce), hasJumped);
+    private void CalculateJumpApex()
+    {
+      if (!collisionDown)
+      {
+        // Gets stronger the closer to the top of the jump
+        apexPoint = Mathf.InverseLerp(jumpApexThreshold, 0, Mathf.Abs(Velocity.y));
+        fallSpeed = Mathf.Lerp(minFallSpeed, maxFallSpeed, apexPoint);
+      }
+      else
+      {
+        apexPoint = 0;
       }
     }
 
-    void ExecuteJump(Vector2 dir, bool doubleJump = false) {
-      body.velocity = dir;
-      // hasDoubleJumped = doubleJump;
-      hasDoubleJumped = true;
-      hasJumped = true;
-      shouldJump = false;
-
-      if (doubleJump) {
-        jumpState = JumpState.DoubleJumping;
-      } else {
+    private void CalculateVelocityDirection()
+    {
+      if (currentVerticalSpeed > 0)
+      {
+        // Going up
         jumpState = JumpState.Jumping;
       }
-    }
-  }
-  public void HandleJumping() {
-    if (!canJump) return;
-
-    if (isDashing && (dashDirection == Vector2.up)) {
-      return;
-    }
-
-    bool isGravityEnabled = body.gravityScale > 0;
-
-    if (isGravityEnabled && body.velocity.y < 0 && !isGrounded) {
-      jumpState = JumpState.Falling;
-    }
-
-    if (isGravityEnabled && !isGrounded && body.velocity.y < jumpVelocityFalloff || body.velocity.y > 0|| HasBufferedJump) {
-      body.velocity += Vector2.up * Physics2D.gravity.y * fallMultiplier * Time.deltaTime;
-    }
-  }
-  #endregion
-
-  #region Dashing
-  private void HandleDashing() {
-    if (!canDash) return;
-
-    if (isDashing && Time.time >= timeStartedDash + dashLength) {
-      isDashing = false;
-      // Clamp the velocity so they don't keep shooting off
-      // body.velocity = new Vector2(body.velocity.x > dashSpeed ? dashSpeed : body.velocity.x, body.velocity.y > dashSpeed ? dashSpeed : body.velocity.y);
-      body.gravityScale = defaultGravityScale;
-      if (isGrounded) {
-        hasDashed = false;
-      }
-    }
-  }
-
-  public void Dash(Direction windDirection, Vector2 swipeDelta) {
-    if (!hasDashed && !isGrounded) {
-      dashDirection = CalculateDashDirection(swipeDelta);
-
-      isDashing = true;
-      hasDashed = true;
-      timeStartedDash = Time.time;
-    }
-
-    if (isDashing) {
-      body.gravityScale = 0;
-      Vector2 dashVelocity = dashDirection * dashSpeed;
-      
-      if (dashDirection == Vector2.up) {
-        body.velocity = dashDirection * dashSpeed * 0.6f;
-      } else {
-        body.velocity = dashVelocity;
-      }
-    }
-  }
-
-  private Vector2 CalculateDashDirection(Vector2 swipeDelta) {
-    Vector2 dashDirection = Vector2.zero;
-
-    if (Mathf.Abs(swipeDelta.x) >= diagonalDashThreshold && Mathf.Abs(swipeDelta.y) >= diagonalDashThreshold) {
-      float xVelocity = swipeDelta.x > 0 ? 1 : -1;
-      float yVelocity = swipeDelta.y > 0 ? 1 : -1;
-
-      dashDirection = new Vector2(xVelocity, yVelocity);
-    } else if (Mathf.Abs(swipeDelta.x) >= Mathf.Abs(swipeDelta.y)) {
-      if (swipeDelta.x > 0) {
-        dashDirection = Vector2.right;
-      } else {
-        dashDirection = Vector2.left;
-      }
-    } else {
-      if (swipeDelta.y > 0) {
-        dashDirection = Vector2.up;
-      } else {
-        dashDirection = Vector2.down;
+      else if (currentVerticalSpeed < 0)
+      {
+        // Going down
+        jumpState = JumpState.Falling;
       }
     }
 
-    return dashDirection;
-  }
-  #endregion
+    private void CalculateJump()
+    {
+      if (!enableJump) return;
 
-  #region Ledge Climbing
-  public void HandleLedgeClimbing() {
-    if (isGrounded) return;
-
-    if (!canLedgeClimb) return;
-
-    if (shouldLedgeClimb) return;
-
-    if (pushingWall && !isAgainstWall) {
-      if (facingLeft) {
-        ledgePosBot = transform.position + new Vector3(-wallCheckOffset.x, wallCheckOffset.y);
-        
-        ledgePos1 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) - ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
-        ledgePos2 = new Vector2(Mathf.Floor(ledgePosBot.x + wallCheckDistance) + ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
-      } else {
-        ledgePosBot = transform.position + new Vector3(wallCheckOffset.x, wallCheckOffset.y);
-
-        ledgePos1 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) + ledgeClimbOffset1.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset1.y);
-        ledgePos2 = new Vector2(Mathf.Ceil(ledgePosBot.x - wallCheckDistance) - ledgeClimbOffset2.x, Mathf.Floor(ledgePosBot.y) + ledgeClimbOffset2.y);
+      // Jump if: grounded or within coyote threshold || sufficient jump buffer
+      if (jumpPressed && CanUseCoyote || HasBufferedJump)
+      {
+        currentVerticalSpeed = jumpHeight;
+        endedJumpEarly = false;
+        coyoteUsable = false;
+        timeLeftGrounded = float.MinValue;
+        JumpingThisFrame = true;
+        jumpPressed = false;
+        jumpState = JumpState.Jumping;
+      }
+      else
+      {
+        JumpingThisFrame = false;
       }
 
-      shouldLedgeClimb = true;
-      canDash = false;
-      canJump = false;
-      canWalk = false;
-      jumpState = JumpState.LedgeClimbing;
-      body.gravityScale = 0;
+      if (collisionUp)
+      {
+        if (currentVerticalSpeed > 0) currentVerticalSpeed = 0;
+      }
     }
 
-    if (shouldLedgeClimb) {
-      body.velocity = Vector2.zero;
-      transform.position = ledgePos1;
-      StartCoroutine(LedgeClimb());
+    #endregion
+
+    #region Move
+
+    [Header("MOVE")]
+    [SerializeField, Tooltip("Raising this value increases collision accuracy at the cost of performance.")]
+    private int freeColliderIterations = 10;
+    private bool facingRight = true;
+    public bool shouldFlip = false;
+
+    // We cast our bounds before moving to avoid future collisions
+    private void MoveCharacter()
+    {
+      var pos = transform.position;
+      RawMovement = new Vector3(currentHorizontalSpeed, currentVerticalSpeed); // Used externally
+      var move = RawMovement * Time.deltaTime;
+      var furthestPoint = pos + move;
+
+      // check furthest movement. If nothing hit, move and don't do extra checks
+      var hit = Physics2D.OverlapBox(furthestPoint, characterBounds.size, 0, groundLayer);
+      if (!hit)
+      {
+        transform.position += move;
+        return;
+      }
+
+      // otherwise increment away from current pos; see what closest position we can move to
+      var positionToMoveTo = transform.position;
+      for (int i = 1; i < freeColliderIterations; i++)
+      {
+        // increment to check all but furthestPoint - we did that already
+        var t = (float)i / freeColliderIterations;
+        var posToTry = Vector2.Lerp(pos, furthestPoint, t);
+
+        if (Physics2D.OverlapBox(posToTry, characterBounds.size, 0, groundLayer))
+        {
+          transform.position = positionToMoveTo;
+
+          // We've landed on a corner or hit our head on a ledge. Nudge the player gently
+          if (i == 1)
+          {
+            if (currentVerticalSpeed < 0) currentVerticalSpeed = 0;
+            // var dir = transform.position - hit.transform.position;
+            // transform.position += dir.normalized * move.magnitude;
+          }
+
+          return;
+        }
+
+        positionToMoveTo = posToTry;
+      }
     }
-  }
 
-  void UpdateClimbPosition(int state) {
-    float xMultiplier = facingLeft ? -1f : 1f;
-    if (state == 3) {
-      transform.position += new Vector3(0f * xMultiplier, .2f);
-    } else if (state == 4) {
-      // transform.position += new Vector3(.2f * xMultiplier, .1f);
-      transform.position += new Vector3(0f * xMultiplier, .1f);
-    } else if (state == 5) {
-      // transform.position += new Vector3(.3f * xMultiplier, .15f);
-      transform.position += new Vector3(.0f * xMultiplier, .15f);
-    } else if (state == 6) {
-      transform.position += new Vector3(.5f * xMultiplier, .15f);
-    } else if (state == 7) {
-      transform.position = ledgePos2;
+    public void Flip()
+    {
+      Vector3 currentScale = transform.localScale;
+      currentScale.x *= -1;
+      transform.localScale = currentScale;
+      facingRight = !facingRight;
+      shouldFlip = false;
     }
-  }
 
-  private IEnumerator LedgeClimb() {
-    yield return new WaitForSeconds(8f/18f);
-    FinishLedgeClimb();
-  }
+    #endregion
 
-  public void FinishLedgeClimb() {
-    body.gravityScale = defaultGravityScale;
-    transform.position = ledgePos2;
-    shouldLedgeClimb = false;
-    canDash = true;
-    canJump = true;
-    canWalk = true;
-    jumpState = JumpState.Grounded;
-  }
+    #region Ledge Climbing
+    public void CalculateLedgeClimbing()
+    {
+      if (Grounded) return;
 
-  private void DrawClimbingLedgeGizmos() {
-    Gizmos.color = Color.cyan;
-    Gizmos.DrawLine(ledgePos1, ledgePos2);
-  }
-  #endregion
+      if (!canLedgeClimb) return;
 
-  #region Collisions
-  private void OnCollisionEnter2D(Collision2D collision) {}
-  private void OnTriggerEnter2D(Collider2D other) {
-    hasDashed = false;
-    dashDirection = Vector2.zero;
-  }
-  #endregion
+      if (isLedgeClimbing) return;
 
-  private void OnDrawGizmos() {
-    DrawGrounderGizmos();
-    DrawWallCheckGizmos();
-    DrawClimbingLedgeGizmos();
-  }
+      if (pushingWall && !isAgainstWall)
+      {
+        if (facingRight)
+        {
+          ledgePositionBottom = transform.position + new Vector3(wallCheckOffset.x, wallCheckOffset.y);
 
-  public bool IsFacingLeft() {
-    return facingLeft;
-  }
+          ledgeStartPosition = new Vector2(Mathf.Ceil(ledgePositionBottom.x - wallCheckDistance) + ledgeClimbOffset1.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset1.y);
+          ledgeEndPosition = new Vector2(Mathf.Ceil(ledgePositionBottom.x - wallCheckDistance) - ledgeClimbOffset2.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset2.y);
+        }
+        else
+        {
+          ledgePositionBottom = transform.position + new Vector3(-wallCheckOffset.x, wallCheckOffset.y);
 
-  public enum JumpState
-  {
-    Grounded = 0,
-    Jumping = 1,
-    LedgeClimbing = 2,
-    Falling = 3,
-    DoubleJumping = 4
+          ledgeStartPosition = new Vector2(Mathf.Floor(ledgePositionBottom.x + wallCheckDistance) - ledgeClimbOffset1.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset1.y);
+          ledgeEndPosition = new Vector2(Mathf.Floor(ledgePositionBottom.x + wallCheckDistance) + ledgeClimbOffset2.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset2.y);
+        }
+
+        isLedgeClimbing = true;
+        // canDash = false;
+        enableJump = false;
+        enableWalk = false;
+        jumpState = JumpState.LedgeClimbing;
+        enableGravity = false;
+      }
+
+      if (isLedgeClimbing)
+      {
+        currentVerticalSpeed = 0;
+        currentHorizontalSpeed = 0;
+        transform.position = ledgeStartPosition;
+        StartCoroutine(LedgeClimb());
+      }
+    }
+
+    void UpdateClimbPosition(int state)
+    {
+      float xMultiplier = facingRight ? 1f : -1f;
+      if (state == 3)
+      {
+        transform.position += new Vector3(0f * xMultiplier, .2f);
+      }
+      else if (state == 4)
+      {
+        // transform.position += new Vector3(.2f * xMultiplier, .1f);
+        transform.position += new Vector3(0f * xMultiplier, .1f);
+      }
+      else if (state == 5)
+      {
+        // transform.position += new Vector3(.3f * xMultiplier, .15f);
+        transform.position += new Vector3(.0f * xMultiplier, .15f);
+      }
+      else if (state == 6)
+      {
+        transform.position += new Vector3(.3f * xMultiplier, .15f);
+      }
+      else if (state == 7)
+      {
+        transform.position = ledgeEndPosition;
+      }
+    }
+
+    private IEnumerator LedgeClimb()
+    {
+      yield return new WaitForSeconds(8f / 18f);
+      FinishLedgeClimb();
+    }
+
+    public void FinishLedgeClimb()
+    {
+      enableGravity = true;
+      transform.position = ledgeEndPosition;
+      isLedgeClimbing = false;
+      // enableDash = true;
+      enableJump = true;
+      enableWalk = true;
+      jumpState = JumpState.Grounded;
+    }
+
+    private void DrawClimbingLedgeGizmos()
+    {
+      Gizmos.color = Color.cyan;
+      Gizmos.DrawLine(ledgeStartPosition, ledgeEndPosition);
+    }
+    private void DrawWallCheckGizmos()
+    {
+      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
+      float xDistance = facingRight ? wallCheckDistance : -wallCheckDistance;
+
+      Gizmos.color = Color.magenta;
+      // Wall check
+      Gizmos.DrawLine(transform.position + new Vector3(xOffset, wallCheckOffset.y), transform.position + new Vector3(xOffset, wallCheckOffset.y) + new Vector3(xDistance, 0));
+
+      Gizmos.color = Color.yellow;
+      // Ledge check
+      Gizmos.DrawLine(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), transform.position + new Vector3(xOffset, ledgeCheckOffsetY) + new Vector3(xDistance, 0));
+    }
+    #endregion
   }
 }

@@ -2,57 +2,60 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Wind : MonoBehaviour
+namespace Player
 {
-  [SerializeField] private float speed = 7f;
-  private float timeWhenShot;
-  private float shootLength = 1f;
-  private Rigidbody2D body;
-
-  void Start()
+  public class Wind : MonoBehaviour
   {
-    // body = GetComponent<Rigidbody2D>();
-  }
+    [SerializeField] private float speed = 7f;
+    private float timeWhenShot;
+    private float shootLength = 1f;
+    private Rigidbody2D body;
 
-  public void Shoot(int direction)
-  {
-    body = GetComponent<Rigidbody2D>();
-    
-    switch (direction)
+    void Start()
     {
-      case 0: {
-        body.velocity = transform.right * -1 * speed;
-        break;
-      }
-      case 1: {
-        body.velocity = transform.right * speed;
-        break;
-      }
-      case 2: {
-        body.velocity = transform.up * speed;
-        break;
-      }
-      case 3: {
-        body.velocity = transform.up * -1 * speed;
-        break;
-      }
+      // body = GetComponent<Rigidbody2D>();
     }
-    timeWhenShot = Time.time;
-  }
 
-  void Update() {
-    if (Time.time >= timeWhenShot + shootLength && this != null) {
-      Destroy(gameObject);
+    public void Shoot(int direction)
+    {
+      body = GetComponent<Rigidbody2D>();
+      
+      switch (direction)
+      {
+        case 0: {
+          body.velocity = transform.right * -1 * speed;
+          break;
+        }
+        case 1: {
+          body.velocity = transform.right * speed;
+          break;
+        }
+        case 2: {
+          body.velocity = transform.up * speed;
+          break;
+        }
+        case 3: {
+          body.velocity = transform.up * -1 * speed;
+          break;
+        }
+      }
+      timeWhenShot = Time.time;
     }
-  }
 
-  void OnTriggerEnter2D(Collider2D other)
-  {
-    if (other.name == "Box") {
-      other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
+    void Update() {
+      if (Time.time >= timeWhenShot + shootLength && this != null) {
+        Destroy(gameObject);
+      }
     }
-    if (this != null) {
-      Destroy(gameObject);
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+      if (other.name == "Box") {
+        other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
+      }
+      if (this != null) {
+        Destroy(gameObject);
+      }
     }
   }
 }
