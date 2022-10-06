@@ -5,7 +5,7 @@ using Aarthificial.Reanimation;
 
 namespace Player
 {
-  public class PlayerRenderer : MonoBehaviour
+  public class PlayerRenderer : Singleton<PlayerRenderer>
   {
     private static class Drivers
     {
@@ -29,7 +29,7 @@ namespace Player
     private void Awake()
     {
       reanimator = GetComponent<Reanimator>();
-      controller = GetComponent<PlayerController>();
+      controller = PlayerController.Instance;
     }
 
     private void OnEnable()
@@ -52,7 +52,7 @@ namespace Player
       // reanimator.Flip = !controller.facingRight;
       reanimator.Set(Drivers.IsMoving, isMoving);
       reanimator.Set(Drivers.IsGrounded, controller.Grounded);
-      // reanimator.Set(Drivers.IsDashing, controller.isDashing);
+      reanimator.Set(Drivers.IsDashing, controller.Dashing);
       reanimator.Set(Drivers.JumpState, (int)controller.JumpState);
       reanimator.Set(Drivers.ShouldFlip, controller.shouldFlip);
 

@@ -17,6 +17,7 @@ namespace Player
     public bool LandingThisFrame { get; }
     public Vector3 RawMovement { get; }
     public bool Grounded { get; }
+    public bool Dashing { get; }
   }
 
   public struct RayRange

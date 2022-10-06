@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Player
 {
-  public class PlayerController : MonoBehaviour, IPlayerController
+  public class PlayerController : Singleton<PlayerController>, IPlayerController
   {
     // Public for external hooks
     public Vector3 Velocity { get; private set; }
@@ -15,6 +15,7 @@ namespace Player
     public bool LandingThisFrame { get; private set; }
     public Vector3 RawMovement { get; private set; }
     public bool Grounded => collisionDown;
+    public bool Dashing => isDashing;
     public JumpState JumpState => jumpState;
 
     private Vector3 lastPosition;
@@ -30,10 +31,11 @@ namespace Player
     void Activate() => active = true;
     void OnEnable()
     {
-      playerRenderer = GetComponent<PlayerRenderer>();
+      playerRenderer = PlayerRenderer.Instance;
       inputManager = InputManager.Instance;
       inputManager.OnMove += HandleMoveInput;
       inputManager.OnJump += HandleJumpInput;
+      inputManager.OnThrowWind += HandleDashInput;
       playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     }
 
@@ -41,6 +43,7 @@ namespace Player
     {
       inputManager.OnMove -= HandleMoveInput;
       inputManager.OnJump -= HandleJumpInput;
+      inputManager.OnThrowWind -= HandleDashInput;
       playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
     }
 
@@ -51,16 +54,16 @@ namespace Player
       Velocity = (transform.position - lastPosition) / Time.deltaTime;
       lastPosition = transform.position;
 
-      // GatherInput();
       RunCollisionChecks();
       RunWallCollisionChecks();
 
       CalculateWalk(); // Horizontal movement
-      CalculateVelocityDirection(); // Vertical movement
+      CalculateVelocityDirection(); // Movement direction
       CalculateJumpApex(); // Affects fall speed, so calculate before gravity
       CalculateGravity(); // Vertical movement
       CalculateJump(); // Possibly overrides vertical
-      CalculateLedgeClimb();
+      CalculateDashing(); // Dash movement
+      CalculateLedgeClimb(); // Ledge climb movement
 
       MoveCharacter(); // Actually perform the axis movement
     }
@@ -70,7 +73,7 @@ namespace Player
     private InputManager inputManager;
     private bool jumpPressed = false;
 
-    public void HandleMoveInput(Vector2 swipeDelta)
+    private void HandleMoveInput(Vector2 swipeDelta)
     {
       MovementInput = new FrameInput
       {
@@ -85,18 +88,51 @@ namespace Player
       lastJumpPressed = Time.time;
     }
 
+    private void HandleDashInput(Direction windDirection, Vector2 swipeDelta)
+    {
+      if (!hasDashed && !Grounded)
+      {
+        dashDirection = CalculateDashDirection(swipeDelta);
+
+        isDashing = true;
+        hasDashed = true;
+        timeStartedDash = Time.time;
+      }
+
+      if (isDashing)
+      {
+        enableGravity = false;
+        enableWalk = false;
+        enableJump = false;
+        Vector2 dashVelocity;
+
+        if (dashDirection.magnitude > 1)
+        {
+          dashVelocity = dashDirection.normalized * dashSpeed;
+        }
+        else
+        {
+          dashVelocity = dashDirection * dashSpeed;
+        }
+
+        currentVerticalSpeed = dashVelocity.y;
+        currentHorizontalSpeed = dashVelocity.x;
+      }
+    }
+
     #endregion
 
     #region Collisions
 
-    [Header("COLLISION")][SerializeField] private Bounds characterBounds;
+    [Header("COLLISION")]
+    [SerializeField] private Bounds characterBounds;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private int detectorCount = 3;
     [SerializeField] private float detectionRayLength = 0.1f;
     [SerializeField][Range(0.1f, 0.3f)] private float rayBuffer = 0.1f; // Prevents side detectors hitting the ground
 
     private RayRange raysUp, raysRight, raysDown, raysLeft;
-    private bool collisionUp, collisionRight, collisionDown, collisionLeft;
+    [SerializeField] private bool collisionUp, collisionRight, collisionDown, collisionLeft;
 
     private float timeLeftGrounded;
 
@@ -151,6 +187,15 @@ namespace Player
       collisionLeft = RunDetection(raysLeft);
       collisionRight = RunDetection(raysRight);
 
+      if (isDashing && (collisionLeft || collisionRight || collisionUp || collisionDown))
+      {
+        isDashing = false;
+        hasDashed = false;
+        enableGravity = true;
+        enableWalk = true;
+        enableJump = true;
+      }
+
       bool RunDetection(RayRange range)
       {
         return EvaluateRayPositions(range).Any(point => Physics2D.Raycast(point, range.Dir, detectionRayLength, groundLayer));
@@ -160,12 +205,12 @@ namespace Player
     private void CalculateRayRanged()
     {
       // This is crying out for some kind of refactor. 
-      var b = new Bounds(transform.position, characterBounds.size);
+      var bounds = new Bounds(transform.position, characterBounds.size);
 
-      raysDown = new RayRange(b.min.x + rayBuffer, b.min.y, b.max.x - rayBuffer, b.min.y, Vector2.down);
-      raysUp = new RayRange(b.min.x + rayBuffer, b.max.y, b.max.x - rayBuffer, b.max.y, Vector2.up);
-      raysLeft = new RayRange(b.min.x, b.min.y + rayBuffer, b.min.x, b.max.y - rayBuffer, Vector2.left);
-      raysRight = new RayRange(b.max.x, b.min.y + rayBuffer, b.max.x, b.max.y - rayBuffer, Vector2.right);
+      raysDown = new RayRange(bounds.min.x + rayBuffer, bounds.min.y, bounds.max.x - rayBuffer, bounds.min.y, Vector2.down);
+      raysUp = new RayRange(bounds.min.x + rayBuffer, bounds.max.y, bounds.max.x - rayBuffer, bounds.max.y, Vector2.up);
+      raysLeft = new RayRange(bounds.min.x, bounds.min.y + rayBuffer, bounds.min.x, bounds.max.y - rayBuffer, Vector2.left);
+      raysRight = new RayRange(bounds.max.x, bounds.min.y + rayBuffer, bounds.max.x, bounds.max.y - rayBuffer, Vector2.right);
     }
 
 
@@ -185,10 +230,11 @@ namespace Player
 
       // Bounds
       Gizmos.color = Color.yellow;
-      Gizmos.DrawWireCube(transform.position + characterBounds.center, characterBounds.size);
+      Gizmos.DrawWireCube(transform.position, characterBounds.size);
 
       // Rays
-      if (!Application.isPlaying)
+      // if (!Application.isPlaying)
+      if (true)
       {
         CalculateRayRanged();
         Gizmos.color = Color.blue;
@@ -214,7 +260,8 @@ namespace Player
 
     #region Walk
 
-    [Header("WALKING")][SerializeField] private float acceleration = 90;
+    [Header("WALKING")]
+    [SerializeField] private float acceleration = 90;
     [SerializeField] private float moveClamp = 13;
     [SerializeField] private float deAcceleration = 60f;
     [SerializeField] private float apexBonus = 2;
@@ -297,7 +344,8 @@ namespace Player
 
     #region Jump
 
-    [Header("JUMPING")][SerializeField] private float jumpHeight = 30;
+    [Header("JUMPING")]
+    [SerializeField] private float jumpHeight = 30;
     [SerializeField] private float jumpApexThreshold = 10f;
     [SerializeField] private float coyoteTimeThreshold = 0.1f;
     [SerializeField] private float jumpBuffer = 0.1f;
@@ -408,8 +456,8 @@ namespace Player
           if (i == 1)
           {
             if (currentVerticalSpeed < 0) currentVerticalSpeed = 0;
-            // var dir = transform.position - hit.transform.position;
-            // transform.position += dir.normalized * move.magnitude;
+            var dir = transform.position - hit.transform.position;
+            transform.position += dir.normalized * move.magnitude;
           }
 
           return;
@@ -457,7 +505,7 @@ namespace Player
         }
 
         isLedgeClimbing = true;
-        // canDash = false;
+        enableDash = false;
         enableJump = false;
         enableWalk = false;
         jumpState = JumpState.LedgeClimbing;
@@ -511,7 +559,7 @@ namespace Player
       enableGravity = true;
       transform.position = ledgeEndPosition;
       isLedgeClimbing = false;
-      // enableDash = true;
+      enableDash = true;
       enableJump = true;
       enableWalk = true;
       jumpState = JumpState.Grounded;
@@ -535,6 +583,75 @@ namespace Player
       // Ledge check
       Gizmos.DrawLine(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), transform.position + new Vector3(xOffset, ledgeCheckOffsetY) + new Vector3(xDistance, 0));
     }
+    #endregion
+
+    #region Dashing
+
+    [Header("DASH")]
+    [SerializeField] private bool enableDash = true;
+    [SerializeField] private float dashSpeed = 30f;
+    [SerializeField] private float dashLength = 0.15f;
+
+    private bool hasDashed;
+    private bool isDashing;
+    private float timeStartedDash;
+    public Vector2 dashDirection;
+    [SerializeField] private float diagonalDashThreshold = 0.35f;
+
+    private void CalculateDashing()
+    {
+      if (!enableDash) return;
+
+      if (isDashing && Time.time >= timeStartedDash + dashLength)
+      {
+        isDashing = false;
+        enableGravity = true;
+        enableWalk = true;
+        enableJump = true;
+      }
+      if (Grounded)
+      {
+        hasDashed = false;
+      }
+    }
+
+    private Vector2 CalculateDashDirection(Vector2 swipeDelta)
+    {
+      Vector2 dashDirection = Vector2.zero;
+
+      if (Mathf.Abs(swipeDelta.x) >= diagonalDashThreshold && Mathf.Abs(swipeDelta.y) >= diagonalDashThreshold)
+      {
+        float xVelocity = (swipeDelta.x > 0 ? 1 : -1);
+        float yVelocity = (swipeDelta.y > 0 ? 1 : -1);
+
+        dashDirection = new Vector2(xVelocity, yVelocity);
+      }
+      else if (Mathf.Abs(swipeDelta.x) >= Mathf.Abs(swipeDelta.y))
+      {
+        if (swipeDelta.x > 0)
+        {
+          dashDirection = Vector2.right;
+        }
+        else
+        {
+          dashDirection = Vector2.left;
+        }
+      }
+      else
+      {
+        if (swipeDelta.y > 0)
+        {
+          dashDirection = Vector2.up;
+        }
+        else
+        {
+          dashDirection = Vector2.down;
+        }
+      }
+
+      return dashDirection;
+    }
+
     #endregion
   }
 }
