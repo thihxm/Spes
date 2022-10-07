@@ -27,33 +27,42 @@ namespace Player
 
     void Start()
     {
-      player = GetComponent<PlayerController>();
+      player = PlayerController.Instance;
     }
 
     public void ThrowWind(Direction windDirection, Vector2 swipeDelta)
     {
       if (windDirection == Direction.Stationary) return;
 
-      // if (player.isGrounded) {  
-      //   if (windDirection == Direction.Left)
-      //   {
-      //     if (player.IsFacingLeft()) {
-      //       Shoot(frontPoint, (int) windDirection);
-      //     } else {
-      //       Shoot(backPoint, (int) windDirection);
-      //     }
-      //   } else if (windDirection == Direction.Right)
-      //   {
-      //     if (player.IsFacingLeft()) {
-      //       Shoot(backPoint, (int) windDirection);
-      //     } else {
-      //       Shoot(frontPoint, (int) windDirection);
-      //     }
-      //   } else if (windDirection == Direction.Up)
-      //   {
-      //     Shoot(topPoint, (int) windDirection);
-      //   }
-      // }
+      if (player.Grounded)
+      {
+        if (windDirection == Direction.Left)
+        {
+          if (player.FacingRight)
+          {
+            Shoot(backPoint, (int)windDirection);
+          }
+          else
+          {
+            Shoot(frontPoint, (int)windDirection);
+          }
+        }
+        else if (windDirection == Direction.Right)
+        {
+          if (player.FacingRight)
+          {
+            Shoot(frontPoint, (int)windDirection);
+          }
+          else
+          {
+            Shoot(backPoint, (int)windDirection);
+          }
+        }
+        else if (windDirection == Direction.Up)
+        {
+          Shoot(topPoint, (int)windDirection);
+        }
+      }
     }
 
     // Update is called once per frame

@@ -18,6 +18,7 @@ namespace Player
     public Vector3 RawMovement { get; }
     public bool Grounded { get; }
     public bool Dashing { get; }
+    public bool FacingRight { get; }
   }
 
   public struct RayRange

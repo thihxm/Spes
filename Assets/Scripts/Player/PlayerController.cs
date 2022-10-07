@@ -16,6 +16,7 @@ namespace Player
     public Vector3 RawMovement { get; private set; }
     public bool Grounded => collisionDown;
     public bool Dashing => isDashing;
+    public bool FacingRight => isFacingRight;
     public JumpState JumpState => jumpState;
 
     private Vector3 lastPosition;
@@ -154,8 +155,8 @@ namespace Player
     {
       if (isLedgeClimbing) return;
 
-      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
-      Vector2 checkDirection = facingRight ? Vector2.right : Vector2.left;
+      float xOffset = isFacingRight ? wallCheckOffset.x : -wallCheckOffset.x;
+      Vector2 checkDirection = isFacingRight ? Vector2.right : Vector2.left;
 
       isAgainstWall = Physics2D.Raycast(transform.position + new Vector3(xOffset, wallCheckOffset.y), checkDirection, wallCheckDistance, groundLayer);
 
@@ -284,7 +285,7 @@ namespace Player
         currentHorizontalSpeed += apexBonus * Time.deltaTime;
 
         // Flip logic
-        if ((MovementInput.X > 0.01f && !facingRight) || (MovementInput.X < -0.01f && facingRight))
+        if ((MovementInput.X > 0.01f && !isFacingRight) || (MovementInput.X < -0.01f && isFacingRight))
         {
           shouldFlip = true;
           if (!Grounded)
@@ -421,7 +422,7 @@ namespace Player
     [Header("MOVE")]
     [SerializeField, Tooltip("Raising this value increases collision accuracy at the cost of performance.")]
     private int freeColliderIterations = 10;
-    private bool facingRight = true;
+    private bool isFacingRight = true;
     public bool shouldFlip = false;
 
     // We cast our bounds before moving to avoid future collisions
@@ -472,7 +473,7 @@ namespace Player
       Vector3 currentScale = transform.localScale;
       currentScale.x *= -1;
       transform.localScale = currentScale;
-      facingRight = !facingRight;
+      isFacingRight = !isFacingRight;
       shouldFlip = false;
     }
 
@@ -489,7 +490,7 @@ namespace Player
 
       if (pushingWall && !isAgainstWall)
       {
-        if (facingRight)
+        if (isFacingRight)
         {
           ledgePositionBottom = transform.position + new Vector3(wallCheckOffset.x, wallCheckOffset.y);
 
@@ -523,7 +524,7 @@ namespace Player
 
     void UpdateClimbPosition(int state)
     {
-      float xMultiplier = facingRight ? 1f : -1f;
+      float xMultiplier = isFacingRight ? 1f : -1f;
       if (state == 3)
       {
         transform.position += new Vector3(0f * xMultiplier, .2f);
@@ -572,8 +573,8 @@ namespace Player
     }
     private void DrawWallCheckGizmos()
     {
-      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
-      float xDistance = facingRight ? wallCheckDistance : -wallCheckDistance;
+      float xOffset = isFacingRight ? wallCheckOffset.x : -wallCheckOffset.x;
+      float xDistance = isFacingRight ? wallCheckDistance : -wallCheckDistance;
 
       Gizmos.color = Color.magenta;
       // Wall check
