@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
+using Player;
 
 [DefaultExecutionOrder(-100)]
 public class InputManager : Singleton<InputManager>
@@ -13,7 +14,7 @@ public class InputManager : Singleton<InputManager>
   public delegate void MoveAction(Vector2 swipeDelta);
   public event MoveAction OnMove;
 
-  public delegate void WindAction(Direction windDirection, Vector2 swipeDelta);
+  public delegate void WindAction(Vector2 swipeDelta);
   public event WindAction OnThrowWind;
 
   private TouchControls touchControls;
@@ -21,8 +22,11 @@ public class InputManager : Singleton<InputManager>
   private InputAction tapAction;
   private InputAction moveAction;
   private InputAction windAction;
+  private InputAction jumpAction;
 
   private Vector2 lastWindSwipeDelta;
+
+  public FrameInput FrameInput { get; private set; }
 
   private void Awake()
   {
@@ -37,6 +41,7 @@ public class InputManager : Singleton<InputManager>
     tapAction = touchControls.Touch.TouchTap;
     moveAction = touchControls.Touch.Move;
     windAction = touchControls.Touch.Wind;
+    jumpAction = touchControls.Touch.Jump;
   }
 
   private void OnDisable()
@@ -47,7 +52,6 @@ public class InputManager : Singleton<InputManager>
 
   private void Start()
   {
-    // touchControls.Touch.TouchSwipeDelta.performed += ctx => PerformSwipe(ctx);
     tapAction.performed += ctx => PerformTap(ctx);
     moveAction.performed += ctx => PerformMove(ctx);
     windAction.performed += ctx => PerformWind(ctx);
@@ -77,8 +81,7 @@ public class InputManager : Singleton<InputManager>
     Vector2 windDelta = context.ReadValue<Vector2>();
     if (context.canceled)
     {
-      Direction actionDirection = GetDirection(lastWindSwipeDelta);
-      OnThrowWind?.Invoke(actionDirection, lastWindSwipeDelta);
+      OnThrowWind?.Invoke(lastWindSwipeDelta);
       lastWindSwipeDelta = Vector2.zero;
       return;
     }
@@ -89,50 +92,20 @@ public class InputManager : Singleton<InputManager>
     }
   }
 
-  private Direction GetDirection(Vector2 windDelta)
+  private void Update() => FrameInput = Gather();
+
+  private FrameInput Gather()
   {
-    float x = windDelta.x;
-    float y = windDelta.y;
-    Direction actionDirection;
-
-    if (x == 0 && y == 0)
+    return new FrameInput
     {
-      return Direction.Stationary;
-    }
-
-    if (Mathf.Abs(y) > Mathf.Abs(x))
-    {
-      if (y > 0)
-      {
-        actionDirection = Direction.Up;
-      }
-      else
-      {
-        actionDirection = Direction.Down;
-      }
-    }
-    else
-    {
-      if (x > 0)
-      {
-        actionDirection = Direction.Right;
-      }
-      else
-      {
-        actionDirection = Direction.Left;
-      }
-    }
-
-    return actionDirection;
+      JumpDown = jumpAction.WasPressedThisFrame(),
+      Move = moveAction.ReadValue<Vector2>(),
+      Wind = windAction.ReadValue<Vector2>(),
+    };
   }
 
   private bool IsJoystickTouch(Vector2 position)
   {
     return (position.x < Screen.width / 2);
-  }
-
-  private void Update()
-  {
-
   }
 }

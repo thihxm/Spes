@@ -56,11 +56,11 @@ public class PlataformOneWay : MonoBehaviour
     inputManager.OnThrowWind -= CheckActionDirection;
   }
 
-  void CheckActionDirection(Direction windDirection, Vector2 swipeDelta)
+  void CheckActionDirection(Vector2 swipeDelta)
   {
-    if (windDirection == Direction.Stationary) return;
+    if (swipeDelta == Vector2.zero) return;
 
-    shouldPass = windDirection == Direction.Down;
+    shouldPass = swipeDelta == Vector2.down;
   }
 
   private void Update()
