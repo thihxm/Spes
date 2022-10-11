@@ -87,6 +87,16 @@ namespace Player
       SetCrouching(false);
     }
 
+    protected virtual void OnEnable()
+    {
+      inputManager.OnThrowWind += HandleDashInput;
+    }
+
+    protected virtual void OnDisable()
+    {
+      inputManager.OnThrowWind -= HandleDashInput;
+    }
+
     protected virtual void Update()
     {
       GatherInput();
@@ -99,8 +109,62 @@ namespace Player
       if (frameInput.JumpDown)
       {
         jumpToConsume = true;
+        jumpReleased = false;
         frameJumpWasPressed = fixedFrame;
       }
+
+      if (frameInput.JumpUp)
+      {
+        jumpReleased = true;
+        frameJumpWasReleased = fixedFrame;
+      }
+    }
+
+    private void HandleDashInput(Vector2 swipeDelta)
+    {
+      if (!dashing && !grounded)
+      {
+        dashDirection = CalculateDashDirection(swipeDelta);
+
+        dashToConsume = true;
+      }
+    }
+
+    private Vector2 CalculateDashDirection(Vector2 swipeDelta)
+    {
+      Vector2 calculatedDirection = Vector2.zero;
+
+      if (Mathf.Abs(swipeDelta.x) >= stats.DashDiagonalThreshold && Mathf.Abs(swipeDelta.y) >= stats.DashDiagonalThreshold)
+      {
+        float xVelocity = (swipeDelta.x > 0 ? 1 : -1);
+        float yVelocity = (swipeDelta.y > 0 ? 1 : -1);
+
+        calculatedDirection = new Vector2(xVelocity, yVelocity);
+      }
+      else if (Mathf.Abs(swipeDelta.x) >= Mathf.Abs(swipeDelta.y))
+      {
+        if (swipeDelta.x > 0)
+        {
+          calculatedDirection = Vector2.right;
+        }
+        else
+        {
+          calculatedDirection = Vector2.left;
+        }
+      }
+      else
+      {
+        if (swipeDelta.y > 0)
+        {
+          calculatedDirection = Vector2.up;
+        }
+        else
+        {
+          calculatedDirection = Vector2.down;
+        }
+      }
+
+      return calculatedDirection;
     }
 
     protected virtual void FixedUpdate()
@@ -381,6 +445,8 @@ namespace Player
     private bool doubleJumpUsable;
     private bool bufferedJumpUsable;
     private int frameJumpWasPressed = int.MinValue;
+    private int frameJumpWasReleased = int.MinValue;
+    private bool jumpReleased;
 
     private bool CanUseCoyote => coyoteUsable && !grounded && fixedFrame < frameLeftGrounded + stats.CoyoteFrames;
     private bool HasBufferedJump => bufferedJumpUsable && fixedFrame < frameJumpWasPressed + stats.JumpBufferFrames;
@@ -441,12 +507,13 @@ namespace Player
     private Vector2 dashVel;
     private bool dashing;
     private int startedDashing;
+    private Vector2 dashDirection = Vector2.zero;
 
     protected virtual void HandleDash()
     {
       if (dashToConsume && canDash && !crouching)
       {
-        var dir = new Vector2(frameInput.Move.x, Mathf.Max(frameInput.Move.y, 0f)).normalized;
+        var dir = dashDirection.normalized;
         if (dir == Vector2.zero)
         {
           dashToConsume = false;

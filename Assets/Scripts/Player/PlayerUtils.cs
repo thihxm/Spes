@@ -9,6 +9,7 @@ namespace Player
   {
     public Vector2 Move;
     public bool JumpDown;
+    public bool JumpUp;
     public Vector2 Wind;
   }
 

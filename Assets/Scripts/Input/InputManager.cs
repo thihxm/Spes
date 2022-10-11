@@ -99,6 +99,7 @@ public class InputManager : Singleton<InputManager>
     return new FrameInput
     {
       JumpDown = jumpAction.WasPressedThisFrame(),
+      JumpUp = jumpAction.WasReleasedThisFrame(),
       Move = moveAction.ReadValue<Vector2>(),
       Wind = windAction.ReadValue<Vector2>(),
     };

@@ -138,6 +138,9 @@ namespace Player
     [Tooltip("The horizontal speed retained when dash has completed")]
     public float DashEndHorizontalMultiplier = 0.25f;
 
+    [Tooltip("Dash input diagonal threshold")]
+    public float DashDiagonalThreshold = 0.35f;
+
     [Header("ATTACKS")]
     [Tooltip("All the player to attack")]
     public bool AllowAttacks = true;
