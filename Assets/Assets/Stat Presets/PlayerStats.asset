@@ -21,14 +21,14 @@ MonoBehaviour:
   CrouchSpeedPenalty: 0.5
   CrouchSlowdownFrames: 50
   CrouchBufferCheck: 0.1
-  AllowDoubleJump: 1
+  AllowDoubleJump: 0
   JumpPower: 36
   MaxFallSpeed: 40
   FallAcceleration: 110
   JumpEndEarlyGravityModifier: 3
   CoyoteFrames: 7
   JumpBufferFrames: 7
-  AllowWalls: 0
+  AllowWalls: 1
   ClimbableLayer:
     serializedVersion: 2
     m_Bits: 128
@@ -56,13 +56,14 @@ MonoBehaviour:
   LedgeClimbDuration: 0.5
   AllowDash: 1
   DashVelocity: 50
-  DashDurationFrames: 5
+  DashDurationFrames: 8
   DashEndHorizontalMultiplier: 0.25
+  DashDiagonalThreshold: 0.35
   AllowAttacks: 0
   AttackFrameCooldown: 15
   PlayerLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 256
   GrounderDistance: 0.1
   WallDetectorSize: {x: 0.85, y: 1.22}
   ExternalVelocityDecay: 100

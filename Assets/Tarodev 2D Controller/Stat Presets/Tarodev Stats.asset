@@ -62,7 +62,7 @@ MonoBehaviour:
   AttackFrameCooldown: 15
   PlayerLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 256
   GrounderDistance: 0.1
   WallDetectorSize: {x: 0.75, y: 1}
   ExternalVelocityDecay: 100
