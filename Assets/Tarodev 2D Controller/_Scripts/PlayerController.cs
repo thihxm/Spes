@@ -1,374 +1,619 @@
-using System.Collections.Generic;
-using System.Linq;
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
+
+using System;
+using System.Collections;
 using UnityEngine;
 
-namespace TarodevController
-{
-  /// <summary>
-  /// Hey!
-  /// Tarodev here. I built this controller as there was a severe lack of quality & free 2D controllers out there.
-  /// Right now it only contains movement and jumping, but it should be pretty easy to expand... I may even do it myself
-  /// if there's enough interest. You can play and compete for best times here: https://tarodev.itch.io/
-  /// If you hve any questions or would like to brag about your score, come to discord: https://discord.gg/GqeHHnhHpz
-  /// </summary>
-  public class PlayerController : MonoBehaviour, IPlayerController
-  {
-    // Public for external hooks
-    public Vector3 Velocity { get; private set; }
-    public FrameInput Input { get; private set; }
-    public bool JumpingThisFrame { get; private set; }
-    public bool LandingThisFrame { get; private set; }
-    public Vector3 RawMovement { get; private set; }
-    public bool Grounded => _colDown;
+namespace TarodevController {
+    [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
+    public class PlayerController : MonoBehaviour, IPlayerController {
+        [SerializeField] private ScriptableStats _stats;
 
-    private Vector3 _lastPosition;
-    private float _currentHorizontalSpeed, _currentVerticalSpeed;
+        #region Internal
 
-    // This is horrible, but for some reason colliders are not fully established when update starts...
-    private bool _active;
-    void Awake() => Invoke(nameof(Activate), 0.5f);
-    void Activate() => _active = true;
-    void OnEnable()
-    {
-      inputManager = InputManager.Instance;
-      inputManager.OnMove += HandleMoveInput;
-      inputManager.OnJump += HandleJumpInput;
-    }
+        private Rigidbody2D _rb;
+        private PlayerInput _input;
+        private CapsuleCollider2D[] _cols; // Standing and Crouching colliders
+        private CapsuleCollider2D _col; // Current collider
+        private Bounds _standingColliderBounds = new(new(0, 0.75f), Vector3.one); // gets overwritten in Awake. When not in play mode, is used for Gizmos
+        private bool _cachedTriggerSetting;
 
-    void OnDisable()
-    {
-      inputManager.OnMove -= HandleMoveInput;
-      inputManager.OnJump -= HandleJumpInput;
-    }
+        private FrameInput _frameInput;
+        private Vector2 _speed;
+        private Vector2 _currentExternalVelocity;
+        private int _fixedFrame;
+        private bool _hasControl = true;
 
-    public void HandleMoveInput(Vector2 swipeDelta)
-    {
-      Input = new FrameInput
-      {
-        JumpDown = UnityEngine.Input.GetButtonDown("Jump"),
-        JumpUp = UnityEngine.Input.GetButtonUp("Jump"),
-        X = swipeDelta.x,
-      };
-      if (Input.JumpDown)
-      {
-        _lastJumpPressed = Time.time;
-      }
-    }
+        #endregion
 
-    private void HandleJumpInput()
-    {
-      jumpPressed = true;
-      _lastJumpPressed = Time.time;
-    }
+        #region External
 
-    private void Update()
-    {
-      if (!_active) return;
-      // Calculate velocity
-      Velocity = (transform.position - _lastPosition) / Time.deltaTime;
-      _lastPosition = transform.position;
+        public event Action<bool, float> GroundedChanged;
+        public event Action<bool, Vector2> DashingChanged;
+        public event Action<bool> WallGrabChanged;
+        public event Action<bool> LedgeClimbChanged;
+        public event Action<bool> Jumped;
+        public event Action DoubleJumped;
+        public event Action Attacked;
+        public ScriptableStats PlayerStats => _stats;
+        public Vector2 Input => _frameInput.Move;
+        public Vector2 Speed => _speed;
+        public Vector2 GroundNormal => _groundNormal;
+        public int WallDirection => _wallDir;
+        public bool Crouching => _crouching;
+        public bool ClimbingLadder => _onLadder;
+        public bool GrabbingLedge => _grabbingLedge;
+        public bool ClimbingLedge => _climbingLedge;
 
-      // GatherInput();
-      RunCollisionChecks();
-
-      CalculateWalk(); // Horizontal movement
-      CalculateJumpApex(); // Affects fall speed, so calculate before gravity
-      CalculateGravity(); // Vertical movement
-      CalculateJump(); // Possibly overrides vertical
-
-      MoveCharacter(); // Actually perform the axis movement
-    }
-
-
-    #region Gather Input
-    private InputManager inputManager;
-    [SerializeField] private bool jumpPressed = false;
-
-    private void GatherInput()
-    {
-      Input = new FrameInput
-      {
-        JumpDown = UnityEngine.Input.GetButtonDown("Jump"),
-        JumpUp = UnityEngine.Input.GetButtonUp("Jump"),
-        X = UnityEngine.Input.GetAxisRaw("Horizontal")
-      };
-      if (Input.JumpDown)
-      {
-        _lastJumpPressed = Time.time;
-      }
-    }
-
-    #endregion
-
-    #region Collisions
-
-    [Header("COLLISION")][SerializeField] private Bounds _characterBounds;
-    [SerializeField] private LayerMask _groundLayer;
-    [SerializeField] private int _detectorCount = 3;
-    [SerializeField] private float _detectionRayLength = 0.1f;
-    [SerializeField][Range(0.1f, 0.3f)] private float _rayBuffer = 0.1f; // Prevents side detectors hitting the ground
-
-    private RayRange _raysUp, _raysRight, _raysDown, _raysLeft;
-    private bool _colUp, _colRight, _colDown, _colLeft;
-
-    private float _timeLeftGrounded;
-
-    // We use these raycast checks for pre-collision information
-    private void RunCollisionChecks()
-    {
-      // Generate ray ranges. 
-      CalculateRayRanged();
-
-      // Ground
-      LandingThisFrame = false;
-      var groundedCheck = RunDetection(_raysDown);
-      if (_colDown && !groundedCheck) _timeLeftGrounded = Time.time; // Only trigger when first leaving
-      else if (!_colDown && groundedCheck)
-      {
-        _coyoteUsable = true; // Only trigger when first touching
-        LandingThisFrame = true;
-      }
-
-      _colDown = groundedCheck;
-
-      // The rest
-      _colUp = RunDetection(_raysUp);
-      _colLeft = RunDetection(_raysLeft);
-      _colRight = RunDetection(_raysRight);
-
-      bool RunDetection(RayRange range)
-      {
-        return EvaluateRayPositions(range).Any(point => Physics2D.Raycast(point, range.Dir, _detectionRayLength, _groundLayer));
-      }
-    }
-
-    private void CalculateRayRanged()
-    {
-      // This is crying out for some kind of refactor. 
-      var b = new Bounds(transform.position, _characterBounds.size);
-
-      _raysDown = new RayRange(b.min.x + _rayBuffer, b.min.y, b.max.x - _rayBuffer, b.min.y, Vector2.down);
-      _raysUp = new RayRange(b.min.x + _rayBuffer, b.max.y, b.max.x - _rayBuffer, b.max.y, Vector2.up);
-      _raysLeft = new RayRange(b.min.x, b.min.y + _rayBuffer, b.min.x, b.max.y - _rayBuffer, Vector2.left);
-      _raysRight = new RayRange(b.max.x, b.min.y + _rayBuffer, b.max.x, b.max.y - _rayBuffer, Vector2.right);
-    }
-
-
-    private IEnumerable<Vector2> EvaluateRayPositions(RayRange range)
-    {
-      for (var i = 0; i < _detectorCount; i++)
-      {
-        var t = (float)i / (_detectorCount - 1);
-        yield return Vector2.Lerp(range.Start, range.End, t);
-      }
-    }
-
-    private void OnDrawGizmos()
-    {
-      // Bounds
-      Gizmos.color = Color.yellow;
-      Gizmos.DrawWireCube(transform.position + _characterBounds.center, _characterBounds.size);
-
-      // Rays
-      if (!Application.isPlaying)
-      {
-        CalculateRayRanged();
-        Gizmos.color = Color.blue;
-        foreach (var range in new List<RayRange> { _raysUp, _raysRight, _raysDown, _raysLeft })
-        {
-          foreach (var point in EvaluateRayPositions(range))
-          {
-            Gizmos.DrawRay(point, range.Dir * _detectionRayLength);
-          }
-        }
-      }
-
-      if (!Application.isPlaying) return;
-
-      // Draw the future position. Handy for visualizing gravity
-      Gizmos.color = Color.red;
-      var move = new Vector3(_currentHorizontalSpeed, _currentVerticalSpeed) * Time.deltaTime;
-      Gizmos.DrawWireCube(transform.position + move, _characterBounds.size);
-    }
-
-    #endregion
-
-
-    #region Walk
-
-    [Header("WALKING")][SerializeField] private float _acceleration = 90;
-    [SerializeField] private float _moveClamp = 13;
-    [SerializeField] private float _deAcceleration = 60f;
-    [SerializeField] private float _apexBonus = 2;
-
-    private void CalculateWalk()
-    {
-      if (Input.X != 0)
-      {
-        // Set horizontal move speed
-        _currentHorizontalSpeed += Input.X * _acceleration * Time.deltaTime;
-
-        // clamped by max frame movement
-        _currentHorizontalSpeed = Mathf.Clamp(_currentHorizontalSpeed, -_moveClamp, _moveClamp);
-
-        // Apply bonus at the apex of a jump
-        var apexBonus = Mathf.Sign(Input.X) * _apexBonus * _apexPoint;
-        _currentHorizontalSpeed += apexBonus * Time.deltaTime;
-      }
-      else
-      {
-        // No input. Let's slow the character down
-        _currentHorizontalSpeed = Mathf.MoveTowards(_currentHorizontalSpeed, 0, _deAcceleration * Time.deltaTime);
-      }
-
-      if (_currentHorizontalSpeed > 0 && _colRight || _currentHorizontalSpeed < 0 && _colLeft)
-      {
-        // Don't walk through walls
-        _currentHorizontalSpeed = 0;
-      }
-    }
-
-    #endregion
-
-    #region Gravity
-
-    [Header("GRAVITY")][SerializeField] private float _fallClamp = -40f;
-    [SerializeField] private float _minFallSpeed = 80f;
-    [SerializeField] private float _maxFallSpeed = 120f;
-    private float _fallSpeed;
-
-    private void CalculateGravity()
-    {
-      if (_colDown)
-      {
-        // Move out of the ground
-        if (_currentVerticalSpeed < 0) _currentVerticalSpeed = 0;
-      }
-      else
-      {
-        // Add downward force while ascending if we ended the jump early
-        var fallSpeed = _endedJumpEarly && _currentVerticalSpeed > 0 ? _fallSpeed * _jumpEndEarlyGravityModifier : _fallSpeed;
-
-        // Fall
-        _currentVerticalSpeed -= fallSpeed * Time.deltaTime;
-
-        // Clamp
-        if (_currentVerticalSpeed < _fallClamp) _currentVerticalSpeed = _fallClamp;
-      }
-    }
-
-    #endregion
-
-    #region Jump
-
-    [Header("JUMPING")][SerializeField] private float _jumpHeight = 30;
-    [SerializeField] private float _jumpApexThreshold = 10f;
-    [SerializeField] private float _coyoteTimeThreshold = 0.1f;
-    [SerializeField] private float _jumpBuffer = 0.1f;
-    [SerializeField] private float _jumpEndEarlyGravityModifier = 3;
-    private bool _coyoteUsable;
-    private bool _endedJumpEarly = true;
-    private float _apexPoint; // Becomes 1 at the apex of a jump
-    private float _lastJumpPressed;
-    private bool CanUseCoyote => _coyoteUsable && !_colDown && _timeLeftGrounded + _coyoteTimeThreshold > Time.time;
-    private bool HasBufferedJump => _colDown && _lastJumpPressed + _jumpBuffer > Time.time;
-
-    private void CalculateJumpApex()
-    {
-      if (!_colDown)
-      {
-        // Gets stronger the closer to the top of the jump
-        _apexPoint = Mathf.InverseLerp(_jumpApexThreshold, 0, Mathf.Abs(Velocity.y));
-        _fallSpeed = Mathf.Lerp(_minFallSpeed, _maxFallSpeed, _apexPoint);
-      }
-      else
-      {
-        _apexPoint = 0;
-      }
-    }
-
-    private void CalculateJump()
-    {
-      // Jump if: grounded or within coyote threshold || sufficient jump buffer
-      if (jumpPressed && CanUseCoyote || HasBufferedJump)
-      {
-        _currentVerticalSpeed = _jumpHeight;
-        _endedJumpEarly = false;
-        _coyoteUsable = false;
-        _timeLeftGrounded = float.MinValue;
-        JumpingThisFrame = true;
-        jumpPressed = false;
-      }
-      else
-      {
-        JumpingThisFrame = false;
-      }
-
-      // End the jump early if button released
-      if (!_colDown && Input.JumpUp && !_endedJumpEarly && Velocity.y > 0)
-      {
-        // _currentVerticalSpeed = 0;
-        _endedJumpEarly = true;
-      }
-
-      if (_colUp)
-      {
-        if (_currentVerticalSpeed > 0) _currentVerticalSpeed = 0;
-      }
-    }
-
-    #endregion
-
-    #region Move
-
-    [Header("MOVE")]
-    [SerializeField, Tooltip("Raising this value increases collision accuracy at the cost of performance.")]
-    private int _freeColliderIterations = 10;
-
-    // We cast our bounds before moving to avoid future collisions
-    private void MoveCharacter()
-    {
-      var pos = transform.position;
-      RawMovement = new Vector3(_currentHorizontalSpeed, _currentVerticalSpeed); // Used externally
-      var move = RawMovement * Time.deltaTime;
-      var furthestPoint = pos + move;
-
-      // check furthest movement. If nothing hit, move and don't do extra checks
-      var hit = Physics2D.OverlapBox(furthestPoint, _characterBounds.size, 0, _groundLayer);
-      if (!hit)
-      {
-        transform.position += move;
-        return;
-      }
-
-      // otherwise increment away from current pos; see what closest position we can move to
-      var positionToMoveTo = transform.position;
-      for (int i = 1; i < _freeColliderIterations; i++)
-      {
-        // increment to check all but furthestPoint - we did that already
-        var t = (float)i / _freeColliderIterations;
-        var posToTry = Vector2.Lerp(pos, furthestPoint, t);
-
-        if (Physics2D.OverlapBox(posToTry, _characterBounds.size, 0, _groundLayer))
-        {
-          transform.position = positionToMoveTo;
-
-          // We've landed on a corner or hit our head on a ledge. Nudge the player gently
-          if (i == 1)
-          {
-            Debug.Log("Taro Nudge");
-            if (_currentVerticalSpeed < 0) _currentVerticalSpeed = 0;
-            var dir = transform.position - hit.transform.position;
-            transform.position += dir.normalized * move.magnitude;
-          }
-
-          return;
+        public virtual void ApplyVelocity(Vector2 vel, PlayerForce forceType) {
+            if (forceType == PlayerForce.Burst) _speed += vel;
+            else _currentExternalVelocity += vel;
         }
 
-        positionToMoveTo = posToTry;
-      }
+        public virtual void TakeAwayControl(bool resetVelocity = true) {
+            if (resetVelocity) {
+                _rb.velocity = Vector2.zero;
+            }
+
+            _hasControl = false;
+        }
+
+        public virtual void ReturnControl() {
+            _speed = Vector2.zero;
+            _hasControl = true;
+        }
+
+        #endregion
+
+        protected virtual void Awake() {
+            _rb = GetComponent<Rigidbody2D>();
+            _input = GetComponent<PlayerInput>();
+            _cols = GetComponents<CapsuleCollider2D>();
+
+            // Colliders cannot be check whilst disabled. Let's cache its bounds
+            _standingColliderBounds = _cols[0].bounds;
+            _standingColliderBounds.center = _cols[0].offset;
+
+            Physics2D.queriesStartInColliders = false;
+            _cachedTriggerSetting = Physics2D.queriesHitTriggers;
+
+            SetCrouching(false);
+        }
+
+        protected virtual void Update() {
+            GatherInput();
+        }
+
+        protected virtual void GatherInput() {
+            _frameInput = _input.FrameInput;
+
+            if (_frameInput.JumpDown) {
+                _jumpToConsume = true;
+                _frameJumpWasPressed = _fixedFrame;
+            }
+
+            if (_frameInput.DashDown && _stats.AllowDash) _dashToConsume = true;
+            if (_frameInput.AttackDown && _stats.AllowAttacks) _attackToConsume = true;
+        }
+
+        protected virtual void FixedUpdate() {
+            _fixedFrame++;
+
+            CheckCollisions();
+            HandleCollisions();
+            HandleWalls();
+            HandleLedges();
+            HandleLadders();
+            
+            HandleCrouching();
+            HandleJump();
+            HandleDash();
+            HandleAttacking();
+            
+            HandleHorizontal();
+            HandleVertical();
+            ApplyVelocity();
+        }
+
+        #region Collisions
+
+        private readonly RaycastHit2D[] _groundHits = new RaycastHit2D[2];
+        private readonly RaycastHit2D[] _ceilingHits = new RaycastHit2D[2];
+        private readonly Collider2D[] _wallHits = new Collider2D[5];
+        private readonly Collider2D[] _ladderHits = new Collider2D[1];
+        private int _groundHitCount;
+        private int _ceilingHitCount;
+        private int _wallHitCount;
+        private int _ladderHitCount;
+        private int _frameLeftGrounded = int.MinValue;
+        private bool _grounded;
+
+        protected virtual void CheckCollisions() {
+            Physics2D.queriesHitTriggers = false;
+            
+            // Ground and Ceiling
+            var origin = (Vector2)transform.position + _col.offset;
+            _groundHitCount = Physics2D.CapsuleCastNonAlloc(origin, _col.size, _col.direction, 0, Vector2.down, _groundHits, _stats.GrounderDistance, ~_stats.PlayerLayer);
+            _ceilingHitCount = Physics2D.CapsuleCastNonAlloc(origin, _col.size, _col.direction, 0, Vector2.up, _ceilingHits, _stats.GrounderDistance, ~_stats.PlayerLayer);
+
+            // Walls and Ladders
+            var bounds = GetWallDetectionBounds();
+            _wallHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, _wallHits, _stats.ClimbableLayer);
+
+            Physics2D.queriesHitTriggers = true; // Ladders are set to Trigger
+            _ladderHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, _ladderHits, _stats.LadderLayer);
+            Physics2D.queriesHitTriggers = _cachedTriggerSetting;
+        }
+
+        private Bounds GetWallDetectionBounds() {
+            var colliderOrigin = transform.position + _standingColliderBounds.center;
+            return new Bounds(colliderOrigin, _stats.WallDetectorSize);
+        }
+
+        protected virtual void HandleCollisions() {
+            // Hit a Ceiling
+            if (_speed.y > 0 && _ceilingHitCount > 0) _speed.y = 0;
+
+            // Landed on the Ground
+            if (!_grounded && _groundHitCount > 0) {
+                _grounded = true;
+                ResetDash();
+                ResetJump();
+                GroundedChanged?.Invoke(true, Mathf.Abs(_speed.y));
+            }
+            // Left the Ground
+            else if (_grounded && _groundHitCount == 0) {
+                _grounded = false;
+                _frameLeftGrounded = _fixedFrame;
+                GroundedChanged?.Invoke(false, 0);
+            }
+        }
+
+        #endregion
+
+        #region Walls
+
+        private float _currentWallJumpMoveMultiplier = 1f; // aka "Horizontal input influence"
+        private int _wallDir;
+        private bool _isOnWall;
+
+        protected virtual void HandleWalls() {
+            if (!_stats.AllowWalls) return;
+
+            _currentWallJumpMoveMultiplier = Mathf.MoveTowards(_currentWallJumpMoveMultiplier, 1f, 1f / _stats.WallJumpInputLossFrames);
+
+            // May need to prioritize the nearest wall here... But who is going to make a climbable wall that tight?
+            _wallDir = _wallHitCount > 0 ? (int)Mathf.Sign(_wallHits[0].transform.position.x - transform.position.x) : 0;
+
+            if (!_isOnWall && ShouldStickToWall()) SetOnWall(true);
+            else if (_isOnWall && !ShouldStickToWall()) SetOnWall(false);
+
+            bool ShouldStickToWall() {
+                if (_wallDir == 0 || _grounded) return false;
+                if (_stats.RequireInputPush) return Mathf.Sign(_frameInput.Move.x) == _wallDir;
+                return true;
+            }
+        }
+
+        private void SetOnWall(bool on) {
+            _isOnWall = on;
+            if (on) _speed = Vector2.zero;
+            WallGrabChanged?.Invoke(on);
+        }
+
+        #endregion
+
+        #region Ladders
+
+        private Vector2 _ladderSnapVel; // TODO: determine if we need to reset this when leaving a ladder, or use a different kind of Lerp/MoveTowards
+        private int _frameLeftLadder = int.MinValue;
+        private bool _onLadder;
+
+        private bool CanEnterLadder => _ladderHitCount > 0 && _fixedFrame > _frameLeftLadder + _stats.LadderCooldownFrames;
+        private bool LadderInputReached => Mathf.Abs(_frameInput.Move.y) > _stats.LadderClimbThreshold;
+
+        protected virtual void HandleLadders() {
+            if (!_onLadder && CanEnterLadder && LadderInputReached) ToggleClimbingLadders(true);
+            else if (_onLadder && _ladderHitCount == 0) ToggleClimbingLadders(false);
+
+            // Snap to center of ladder
+            if (_onLadder && _frameInput.Move.x == 0 && _stats.SnapToLadders && _hasControl) {
+                var pos = _rb.position;
+                _rb.position = Vector2.SmoothDamp(pos, new Vector2(_ladderHits[0].transform.position.x, pos.y), ref _ladderSnapVel, _stats.LadderSnapSpeed);
+            }
+        }
+
+        private void ToggleClimbingLadders(bool on) {
+            if (on) {
+                _onLadder = true;
+                _speed = Vector2.zero;
+            }
+            else {
+                if (!_onLadder) return;
+                _frameLeftLadder = _fixedFrame;
+                _onLadder = false;
+            }
+        }
+
+        #endregion
+
+        #region Ledges
+
+        private Vector2 _ledgeCornerPos;
+        private bool _grabbingLedge;
+        private bool _climbingLedge;
+
+        protected virtual void HandleLedges() {
+            if (_climbingLedge || !_isOnWall) return;
+
+            _grabbingLedge = TryGetLedgeCorner(out _ledgeCornerPos);
+
+            if (_grabbingLedge) HandleLedgeGrabbing();
+        }
+        
+        protected virtual bool TryGetLedgeCorner(out Vector2 cornerPos) {
+            cornerPos = Vector2.zero;
+            Vector2 grabHeight = _rb.position + _stats.LedgeGrabPoint.y * Vector2.up;
+
+            var hit1 = Physics2D.Raycast(grabHeight - _stats.LedgeRaycastSpacing * Vector2.up, _wallDir * Vector2.right, 0.5f, _stats.ClimbableLayer);
+            if (!hit1.collider) return false; // Should hit below the ledge. Only used to determine xPos accurately
+
+            var hit2 = Physics2D.Raycast(grabHeight + _stats.LedgeRaycastSpacing * Vector2.up, _wallDir * Vector2.right, 0.5f, _stats.ClimbableLayer);
+            if (hit2.collider) return false; // we only are within ledge-grab range when the first hits and second doesn't
+
+            var hit3 = Physics2D.Raycast(grabHeight + new Vector2(_wallDir * 0.5f, _stats.LedgeRaycastSpacing), Vector2.down, 0.5f, _stats.ClimbableLayer);
+            if (!hit3.collider) return false; // gets our yPos of the corner
+            
+            cornerPos = new Vector2(hit1.point.x, hit3.point.y);
+            return true;
+        }
+
+        protected virtual void HandleLedgeGrabbing() {
+            // Snap to ledge position
+            var xInput = _frameInput.Move.x;
+            var yInput = _frameInput.Move.y;
+            if (yInput != 0 && (xInput == 0 || Mathf.Sign(xInput) == _wallDir) && _hasControl) {
+                var pos = _rb.position;
+                var targetPos = _ledgeCornerPos - Vector2.Scale(_stats.LedgeGrabPoint, new(_wallDir, 1f));
+                _rb.position = Vector2.MoveTowards(pos, targetPos, _stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
+            }
+
+            // TODO: Create new stat variable instead of using Ladders or rename it to "vertical deadzone", "deadzone threshold", etc.
+            if (yInput > _stats.LadderClimbThreshold)
+                StartCoroutine(ClimbLedge());
+        }
+
+        protected virtual IEnumerator ClimbLedge() {
+            LedgeClimbChanged?.Invoke(true);
+            _climbingLedge = true;
+
+            TakeAwayControl();
+            var targetPos = _ledgeCornerPos - Vector2.Scale(_stats.LedgeGrabPoint, new(_wallDir, 1f));
+            transform.position = targetPos;
+
+            float lockedUntil = Time.time + _stats.LedgeClimbDuration;
+            while (Time.time < lockedUntil)
+                yield return new WaitForFixedUpdate();
+
+            LedgeClimbChanged?.Invoke(false);
+            _climbingLedge = false;
+            _grabbingLedge = false;
+            SetOnWall(false);
+
+            targetPos = _ledgeCornerPos +  Vector2.Scale(_stats.StandUpOffset, new(_wallDir, 1f));
+            transform.position = targetPos;
+            ReturnControl();
+        }
+
+        #endregion
+
+        #region Crouching
+
+        private readonly Collider2D[] _crouchHits = new Collider2D[5];
+        private int _frameStartedCrouching;
+        private bool _crouching;
+
+        protected virtual bool CrouchPressed => _frameInput.Move.y <= _stats.CrouchInputThreshold;
+
+        protected virtual void HandleCrouching() {
+            if (_crouching && _onLadder) SetCrouching(false); // use standing collider when on ladder
+            else if (_crouching != CrouchPressed) SetCrouching(!_crouching);
+        }
+
+        protected virtual void SetCrouching(bool active) {
+            if (!_crouching && (_onLadder || _isOnWall)) return; // Prevent crouching if climbing
+            if (_crouching && !CanStandUp()) return; // Prevent standing into colliders
+
+            _crouching = active;
+            _col = _cols[active ? 1 : 0];
+            _cols[0].enabled = !active;
+            _cols[1].enabled = active;
+
+            if (_crouching) _frameStartedCrouching = _fixedFrame;
+        }
+
+        protected bool CanStandUp() {
+            var pos = _rb.position + (Vector2)_standingColliderBounds.center + new Vector2(0, _standingColliderBounds.extents.y);
+            var size = new Vector2(_standingColliderBounds.size.x, _stats.CrouchBufferCheck);
+            
+            Physics2D.queriesHitTriggers = false;
+            var hits = Physics2D.OverlapBoxNonAlloc(pos, size, 0, _crouchHits, ~_stats.PlayerLayer);
+            Physics2D.queriesHitTriggers = _cachedTriggerSetting;
+
+            return hits == 0;
+        }
+
+        #endregion
+
+        #region Jump
+
+        private bool _jumpToConsume;
+        private bool _endedJumpEarly;
+        private bool _coyoteUsable;
+        private bool _doubleJumpUsable;
+        private bool _bufferedJumpUsable;
+        private int _frameJumpWasPressed = int.MinValue;
+
+        private bool CanUseCoyote => _coyoteUsable && !_grounded && _fixedFrame < _frameLeftGrounded + _stats.CoyoteFrames;
+        private bool HasBufferedJump => _bufferedJumpUsable && _fixedFrame < _frameJumpWasPressed + _stats.JumpBufferFrames;
+        private bool CanDoubleJump => _doubleJumpUsable &&  _stats.AllowDoubleJump;
+
+        protected virtual void HandleJump() {
+            if (_jumpToConsume || HasBufferedJump) {
+                if (_grounded || _onLadder || CanUseCoyote) NormalJump();
+                else if (_isOnWall) WallJump();
+                else if (_jumpToConsume && CanDoubleJump) DoubleJump();
+            }
+            
+            _jumpToConsume = false; // Always consume the flag
+
+            if (!_endedJumpEarly && !_grounded && !_frameInput.JumpHeld && _rb.velocity.y > 0) _endedJumpEarly = true; // Early end detection
+        }
+
+        protected virtual void NormalJump() {
+            _endedJumpEarly = false;
+            _bufferedJumpUsable = false;
+            _coyoteUsable = false;
+            _doubleJumpUsable = true;
+            ToggleClimbingLadders(false);
+            _speed.y = _stats.JumpPower;
+            Jumped?.Invoke(false);
+        }
+
+        protected virtual void WallJump() {
+            _endedJumpEarly = false;
+            _bufferedJumpUsable = false;
+            _doubleJumpUsable = true; // note: double jump isn't currently refreshed after detaching from wall w/o jumping
+            _currentWallJumpMoveMultiplier = 0;
+            SetOnWall(false);
+            _speed = Vector2.Scale(_stats.WallJumpPower, new(-_wallDir, 1));
+            Jumped?.Invoke(true);
+        }
+
+        protected virtual void DoubleJump() {
+            _endedJumpEarly = false;
+            _doubleJumpUsable = false;
+            _speed.y = _stats.JumpPower;
+            DoubleJumped?.Invoke();
+        }
+
+        protected virtual void ResetJump() {
+            _coyoteUsable = true;
+            _bufferedJumpUsable = true;
+            _doubleJumpUsable = false;
+            _endedJumpEarly = false;
+        }
+
+        #endregion
+
+        #region Dash
+
+        private bool _dashToConsume;
+        private bool _canDash;
+        private Vector2 _dashVel;
+        private bool _dashing;
+        private int _startedDashing;
+
+        protected virtual void HandleDash() {
+            if (_dashToConsume && _canDash && !_crouching) {
+                var dir = new Vector2(_frameInput.Move.x, Mathf.Max(_frameInput.Move.y, 0f)).normalized;
+                if (dir == Vector2.zero) {
+                    _dashToConsume = false;
+                    return;
+                }
+
+                _dashVel = dir * _stats.DashVelocity;
+                _dashing = true;
+                _canDash = false;
+                _startedDashing = _fixedFrame;
+                DashingChanged?.Invoke(true, dir);
+
+                // Strip external buildup
+                _currentExternalVelocity = Vector2.zero;
+            }
+
+            if (_dashing) {
+                _speed = _dashVel;
+                // Cancel when the time is out or we've reached our max safety distance
+                if (_fixedFrame > _startedDashing + _stats.DashDurationFrames) {
+                    _dashing = false;
+                    DashingChanged?.Invoke(false, Vector2.zero);
+                    if (_speed.y > 0) _speed.y = 0;
+                    _speed.x *= _stats.DashEndHorizontalMultiplier;
+                    if (_grounded) _canDash = true;
+                }
+            }
+
+            _dashToConsume = false;
+        }
+
+        protected virtual void ResetDash() {
+            _canDash = true;
+        }
+
+        #endregion
+
+        #region Attacking
+
+        private bool _attackToConsume;
+        private int _frameLastAttacked = int.MinValue;
+
+        protected virtual void HandleAttacking() {
+            if (!_attackToConsume) return;
+
+            if (_fixedFrame > _frameLastAttacked + _stats.AttackFrameCooldown) {
+                _frameLastAttacked = _fixedFrame;
+                Attacked?.Invoke();
+            }
+
+            _attackToConsume = false;
+        }
+
+        #endregion
+
+        #region Horizontal
+
+        protected virtual void HandleHorizontal() {
+            if (_dashing) return;
+            
+            if (_frameInput.Move.x != 0) {
+                if (_crouching && _grounded) {
+                    var crouchPoint = Mathf.InverseLerp(0, _stats.CrouchSlowdownFrames, _fixedFrame - _frameStartedCrouching);
+                    var diminishedMaxSpeed = _stats.MaxSpeed * Mathf.Lerp(1, _stats.CrouchSpeedPenalty, crouchPoint);
+
+                    _speed.x = Mathf.MoveTowards(_speed.x, diminishedMaxSpeed * _frameInput.Move.x, _stats.GroundDeceleration * Time.fixedDeltaTime);
+                }
+                else {
+                    // Prevent useless horizontal speed buildup when against a wall
+                    if (_wallHitCount > 0 && Mathf.Approximately(_rb.velocity.x, 0) && Mathf.Sign(_frameInput.Move.x) == Mathf.Sign(_speed.x))
+                        _speed.x = 0;
+
+                    var inputX = _frameInput.Move.x * (_onLadder ? _stats.LadderShimmySpeedMultiplier : 1);
+                    _speed.x = Mathf.MoveTowards(_speed.x, inputX * _stats.MaxSpeed, _currentWallJumpMoveMultiplier * _stats.Acceleration * Time.fixedDeltaTime);
+                }
+            }
+            else
+                _speed.x = Mathf.MoveTowards(_speed.x, 0, (_grounded ? _stats.GroundDeceleration : _stats.AirDeceleration) * Time.fixedDeltaTime);
+        }
+
+        #endregion
+
+        #region Vertical
+
+        private Vector2 _groundNormal;
+
+        protected virtual void HandleVertical() {
+            if (_dashing) return;
+
+            // Ladder
+            if (_onLadder) {
+                var inputY = _frameInput.Move.y;
+                _speed.y = inputY * (inputY > 0 ? _stats.LadderClimbSpeed : _stats.LadderSlideSpeed);
+
+                return;
+            }
+
+            // Grounded & Slopes
+            if (_grounded && _speed.y <= 0f) {
+                _speed.y = _stats.GroundingForce;
+
+                // We use a raycast here as the groundHits from capsule cast act a bit weird.
+                Physics2D.queriesHitTriggers = false;
+                var hit = Physics2D.Raycast(transform.position, Vector2.down, _stats.GrounderDistance * 2, ~_stats.PlayerLayer);
+                Physics2D.queriesHitTriggers = _cachedTriggerSetting;
+                if (hit.collider != null) {
+                    _groundNormal = hit.normal;
+
+                    if (!Mathf.Approximately(_groundNormal.y, 1f)) { // on a slope
+                        _speed.y = _speed.x * -_groundNormal.x / _groundNormal.y;
+                        if (_speed.x != 0) _speed.y += _stats.GroundingForce;
+                    }
+                }
+                else
+                    _groundNormal = Vector2.zero;
+
+                return;
+            }
+
+            // Wall Climbing & Sliding
+            if (_isOnWall) {
+                if (_frameInput.Move.y > 0) _speed.y = _stats.WallClimbSpeed;
+                else if (_frameInput.Move.y < 0) _speed.y = -_stats.MaxWallFallSpeed; // TODO: new stat variable for better feel?
+                else if (_grabbingLedge) _speed.y = Mathf.MoveTowards(_speed.y, 0, _stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
+                else _speed.y = Mathf.MoveTowards(Mathf.Min(_speed.y, 0), -_stats.MaxWallFallSpeed, _stats.WallFallAcceleration * Time.fixedDeltaTime);
+
+                return;
+            }
+
+            // In Air
+            var fallSpeed = _stats.FallAcceleration;
+            if (_endedJumpEarly && _speed.y > 0) fallSpeed *= _stats.JumpEndEarlyGravityModifier;
+            _speed.y = Mathf.MoveTowards(_speed.y, -_stats.MaxFallSpeed, fallSpeed * Time.fixedDeltaTime);
+        }
+
+        #endregion
+
+        protected virtual void ApplyVelocity() {
+            if (!_hasControl) return;
+            _rb.velocity = _speed + _currentExternalVelocity;
+
+            _currentExternalVelocity = Vector2.MoveTowards(_currentExternalVelocity, Vector2.zero, _stats.ExternalVelocityDecay * Time.fixedDeltaTime);
+        }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmos() {
+            if (_stats.ShowWallDetection) {
+                Gizmos.color = Color.white;
+                var bounds = GetWallDetectionBounds();
+                Gizmos.DrawWireCube(bounds.center, bounds.size);
+            }
+            if (_stats.ShowLedgeDetection) {
+                Gizmos.color = Color.red;
+                var facingDir = Mathf.Sign(_wallDir);
+                var grabHeight = transform.position + _stats.LedgeGrabPoint.y * Vector3.up;
+                var grabPoint = grabHeight + facingDir * _stats.LedgeGrabPoint.x * Vector3.right;
+                Gizmos.DrawWireSphere(grabPoint, 0.05f);
+                Gizmos.DrawWireSphere(grabPoint + Vector3.Scale(_stats.StandUpOffset, new(facingDir, 1)), 0.05f);
+                Gizmos.DrawRay(grabHeight - _stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
+                Gizmos.DrawRay(grabHeight + _stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
+            }
+        }
+#endif
     }
 
-    #endregion
-  }
+    public interface IPlayerController {
+        /// <summary>
+        /// true = Landed. false = Left the Ground. float is Impact Speed
+        /// </summary>
+        public event Action<bool, float> GroundedChanged;
+        public event Action<bool, Vector2> DashingChanged; // Dashing - Dir
+        public event Action<bool> WallGrabChanged;
+        public event Action<bool> LedgeClimbChanged;
+        public event Action<bool> Jumped; // Is wall jump
+        public event Action DoubleJumped;
+        public event Action Attacked;
+
+        public ScriptableStats PlayerStats { get; }
+        public Vector2 Input { get; }
+        public Vector2 Speed { get; }
+        public Vector2 GroundNormal { get; }
+        public int WallDirection { get; }
+        public bool Crouching { get; }
+        public bool ClimbingLadder { get; }
+        public bool GrabbingLedge { get; }
+        public bool ClimbingLedge { get; }
+        public void ApplyVelocity(Vector2 vel, PlayerForce forceType);
+    }
+
+    public enum PlayerForce {
+        /// <summary>
+        /// Added directly to the players movement speed, to be controlled by the standard deceleration
+        /// </summary>
+        Burst,
+
+        /// <summary>
+        /// An additive force handled by the decay system
+        /// </summary>
+        Decay
+    }
 }

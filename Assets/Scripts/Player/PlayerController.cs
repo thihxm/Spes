@@ -1,540 +1,698 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 
+using System;
+using System.Collections;
+using UnityEngine;
 
 namespace Player
 {
-  public class PlayerController : MonoBehaviour, IPlayerController
+  [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
+  public class PlayerController : Singleton<PlayerController>, IPlayerController
   {
-    // Public for external hooks
-    public Vector3 Velocity { get; private set; }
-    public FrameInput MovementInput { get; private set; }
-    public bool JumpingThisFrame { get; private set; }
-    public bool LandingThisFrame { get; private set; }
-    public Vector3 RawMovement { get; private set; }
-    public bool Grounded => collisionDown;
-    public JumpState JumpState => jumpState;
+    [SerializeField] private ScriptableStats stats;
 
-    private Vector3 lastPosition;
-    private float currentHorizontalSpeed, currentVerticalSpeed;
+    #region Internal
 
-    #region Animation variables
-    private PlayerRenderer playerRenderer;
-    #endregion
-
-    // This is horrible, but for some reason colliders are not fully established when update starts...
-    private bool active;
-    void Awake() => Invoke(nameof(Activate), 0.5f);
-    void Activate() => active = true;
-    void OnEnable()
-    {
-      playerRenderer = GetComponent<PlayerRenderer>();
-      inputManager = InputManager.Instance;
-      inputManager.OnMove += HandleMoveInput;
-      inputManager.OnJump += HandleJumpInput;
-      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
-    }
-
-    void OnDisable()
-    {
-      inputManager.OnMove -= HandleMoveInput;
-      inputManager.OnJump -= HandleJumpInput;
-      playerRenderer.OnChangeClimbState -= UpdateClimbPosition;
-    }
-
-    private void Update()
-    {
-      if (!active) return;
-      // Calculate velocity
-      Velocity = (transform.position - lastPosition) / Time.deltaTime;
-      lastPosition = transform.position;
-
-      // GatherInput();
-      RunCollisionChecks();
-      RunWallCollisionChecks();
-
-      CalculateWalk(); // Horizontal movement
-      CalculateVelocityDirection(); // Vertical movement
-      CalculateJumpApex(); // Affects fall speed, so calculate before gravity
-      CalculateGravity(); // Vertical movement
-      CalculateJump(); // Possibly overrides vertical
-      CalculateLedgeClimb();
-
-      MoveCharacter(); // Actually perform the axis movement
-    }
-
-
-    #region Gather Input
+    private Rigidbody2D rigidBody;
     private InputManager inputManager;
-    private bool jumpPressed = false;
+    private CapsuleCollider2D[] colliders; // Standing and Crouching colliders
+    private CapsuleCollider2D playerCollider; // Current collider
+    private Bounds standingColliderBounds = new(new(0, 0.75f), Vector3.one); // gets overwritten in Awake. When not in play mode, is used for Gizmos
+    private bool cachedTriggerSetting;
 
-    public void HandleMoveInput(Vector2 swipeDelta)
+    private FrameInput frameInput;
+    private Vector2 speed;
+    private Vector2 currentExternalVelocity;
+    private int fixedFrame;
+    private bool hasControl = true;
+
+    #endregion
+
+    #region External
+
+    public event Action<bool, float> GroundedChanged;
+    public event Action<bool, Vector2> DashingChanged;
+    public event Action<bool> WallGrabChanged;
+    public event Action<bool> LedgeClimbChanged;
+    public event Action<bool> Jumped;
+    public event Action DoubleJumped;
+    public event Action Attacked;
+    public ScriptableStats PlayerStats => stats;
+    public Vector2 Input => frameInput.Move;
+    public Vector2 Speed => speed;
+    public Vector2 GroundNormal => groundNormal;
+    public int WallDirection => wallDirection;
+    public bool Crouching => crouching;
+    public bool ClimbingLadder => onLadder;
+    public bool GrabbingLedge => grabbingLedge;
+    public bool ClimbingLedge => climbingLedge;
+
+    public virtual void ApplyVelocity(Vector2 vel, PlayerForce forceType)
     {
-      MovementInput = new FrameInput
-      {
-        X = swipeDelta.x,
-        Y = swipeDelta.y
-      };
+      if (forceType == PlayerForce.Burst) speed += vel;
+      else currentExternalVelocity += vel;
     }
 
-    private void HandleJumpInput()
+    public virtual void TakeAwayControl(bool resetVelocity = true)
     {
-      jumpPressed = true;
-      lastJumpPressed = Time.time;
+      if (resetVelocity)
+      {
+        rigidBody.velocity = Vector2.zero;
+      }
+
+      hasControl = false;
+    }
+
+    public virtual void ReturnControl()
+    {
+      speed = Vector2.zero;
+      hasControl = true;
     }
 
     #endregion
+
+    protected virtual void Awake()
+    {
+      rigidBody = GetComponent<Rigidbody2D>();
+      inputManager = InputManager.Instance;
+      colliders = GetComponents<CapsuleCollider2D>();
+
+      // Colliders cannot be check whilst disabled. Let's cache its bounds
+      standingColliderBounds = colliders[0].bounds;
+      standingColliderBounds.center = colliders[0].offset;
+
+      Physics2D.queriesStartInColliders = false;
+      cachedTriggerSetting = Physics2D.queriesHitTriggers;
+
+      SetCrouching(false);
+    }
+
+    protected virtual void OnEnable()
+    {
+      inputManager.OnThrowWind += HandleDashInput;
+    }
+
+    protected virtual void OnDisable()
+    {
+      inputManager.OnThrowWind -= HandleDashInput;
+    }
+
+    protected virtual void Update()
+    {
+      GatherInput();
+    }
+
+    protected virtual void GatherInput()
+    {
+      frameInput = inputManager.FrameInput;
+
+      if (frameInput.JumpDown)
+      {
+        jumpToConsume = true;
+        jumpReleased = false;
+        frameJumpWasPressed = fixedFrame;
+      }
+
+      if (frameInput.JumpUp)
+      {
+        jumpReleased = true;
+        frameJumpWasReleased = fixedFrame;
+      }
+    }
+
+    private void HandleDashInput(Vector2 swipeDelta)
+    {
+      if (!dashing && !grounded)
+      {
+        dashDirection = CalculateDashDirection(swipeDelta);
+
+        dashToConsume = true;
+      }
+    }
+
+    private Vector2 CalculateDashDirection(Vector2 swipeDelta)
+    {
+      Vector2 calculatedDirection = Vector2.zero;
+
+      if (Mathf.Abs(swipeDelta.x) >= stats.DashDiagonalThreshold && Mathf.Abs(swipeDelta.y) >= stats.DashDiagonalThreshold)
+      {
+        float xVelocity = (swipeDelta.x > 0 ? 1 : -1);
+        float yVelocity = (swipeDelta.y > 0 ? 1 : -1);
+
+        calculatedDirection = new Vector2(xVelocity, yVelocity);
+      }
+      else if (Mathf.Abs(swipeDelta.x) >= Mathf.Abs(swipeDelta.y))
+      {
+        if (swipeDelta.x > 0)
+        {
+          calculatedDirection = Vector2.right;
+        }
+        else
+        {
+          calculatedDirection = Vector2.left;
+        }
+      }
+      else
+      {
+        if (swipeDelta.y > 0)
+        {
+          calculatedDirection = Vector2.up;
+        }
+        else
+        {
+          calculatedDirection = Vector2.down;
+        }
+      }
+
+      return calculatedDirection;
+    }
+
+    protected virtual void FixedUpdate()
+    {
+      fixedFrame++;
+
+      CheckCollisions();
+      HandleCollisions();
+      HandleWalls();
+      HandleLedges();
+      HandleLadders();
+
+      HandleCrouching();
+      HandleJump();
+      HandleDash();
+      HandleAttacking();
+
+      HandleHorizontal();
+      HandleVertical();
+      ApplyVelocity();
+    }
 
     #region Collisions
 
-    [Header("COLLISION")][SerializeField] private Bounds characterBounds;
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private int detectorCount = 3;
-    [SerializeField] private float detectionRayLength = 0.1f;
-    [SerializeField][Range(0.1f, 0.3f)] private float rayBuffer = 0.1f; // Prevents side detectors hitting the ground
+    private readonly RaycastHit2D[] groundHits = new RaycastHit2D[2];
+    private readonly RaycastHit2D[] ceilingHits = new RaycastHit2D[2];
+    private readonly Collider2D[] wallHits = new Collider2D[5];
+    private readonly Collider2D[] ladderHits = new Collider2D[1];
+    [SerializeField] private int groundHitCount;
+    private int ceilingHitCount;
+    private int wallHitCount;
+    private int ladderHitCount;
+    private int frameLeftGrounded = int.MinValue;
+    [SerializeField] private bool grounded;
 
-    private RayRange raysUp, raysRight, raysDown, raysLeft;
-    private bool collisionUp, collisionRight, collisionDown, collisionLeft;
-
-    private float timeLeftGrounded;
-
-    #region Wall Check
-    [Header("WALL CHECK")]
-    [SerializeField] private Vector2 wallCheckOffset = new Vector2(0.45f, 0.3f);
-    [SerializeField] private float wallCheckDistance = 0.25f;
-    private bool isAgainstWall, isAgainstWallLedge, pushingWall;
-    [SerializeField] public bool canLedgeClimb = true;
-    [SerializeField] private float ledgeCheckOffsetY = -0.3f;
-    [SerializeField] private Vector2 ledgeClimbOffset1 = Vector2.zero;
-    [SerializeField] private Vector2 ledgeClimbOffset2 = Vector2.zero;
-    private Vector2 ledgePositionBottom, ledgeStartPosition, ledgeEndPosition;
-    [SerializeField] private bool isLedgeClimbing = false;
-
-    #endregion
-
-    void RunWallCollisionChecks()
+    protected virtual void CheckCollisions()
     {
-      if (isLedgeClimbing) return;
+      Physics2D.queriesHitTriggers = false;
 
-      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
-      Vector2 checkDirection = facingRight ? Vector2.right : Vector2.left;
+      // Ground and Ceiling
+      var origin = (Vector2)transform.position + playerCollider.offset;
+      groundHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.down, groundHits, stats.GrounderDistance, ~stats.PlayerLayer);
+      ceilingHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.up, ceilingHits, stats.GrounderDistance, ~stats.PlayerLayer);
 
-      isAgainstWall = Physics2D.Raycast(transform.position + new Vector3(xOffset, wallCheckOffset.y), checkDirection, wallCheckDistance, groundLayer);
+      // Walls and Ladders
+      var bounds = GetWallDetectionBounds();
+      wallHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, wallHits, stats.ClimbableLayer);
 
-      isAgainstWallLedge = Physics2D.Raycast(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), checkDirection, wallCheckDistance, groundLayer);
-
-      pushingWall = (isAgainstWall || isAgainstWallLedge) && Mathf.Abs(MovementInput.X) > 0f;
+      Physics2D.queriesHitTriggers = true; // Ladders are set to Trigger
+      ladderHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, ladderHits, stats.LadderLayer);
+      Physics2D.queriesHitTriggers = cachedTriggerSetting;
     }
 
-    // We use these raycast checks for pre-collision information
-    private void RunCollisionChecks()
+    private Bounds GetWallDetectionBounds()
     {
-      // Generate ray ranges. 
-      CalculateRayRanged();
-
-      // Ground
-      LandingThisFrame = false;
-      var groundedCheck = RunDetection(raysDown);
-      if (collisionDown && !groundedCheck) timeLeftGrounded = Time.time; // Only trigger when first leaving
-      else if (!collisionDown && groundedCheck)
-      {
-        coyoteUsable = true; // Only trigger when first touching
-        LandingThisFrame = true;
-      }
-
-      collisionDown = groundedCheck;
-
-      // The rest
-      collisionUp = RunDetection(raysUp);
-      collisionLeft = RunDetection(raysLeft);
-      collisionRight = RunDetection(raysRight);
-
-      bool RunDetection(RayRange range)
-      {
-        return EvaluateRayPositions(range).Any(point => Physics2D.Raycast(point, range.Dir, detectionRayLength, groundLayer));
-      }
+      var colliderOrigin = transform.position + standingColliderBounds.center;
+      return new Bounds(colliderOrigin, stats.WallDetectorSize);
     }
 
-    private void CalculateRayRanged()
+    protected virtual void HandleCollisions()
     {
-      // This is crying out for some kind of refactor. 
-      var b = new Bounds(transform.position, characterBounds.size);
+      // Hit a Ceiling
+      if (speed.y > 0 && ceilingHitCount > 0) speed.y = 0;
 
-      raysDown = new RayRange(b.min.x + rayBuffer, b.min.y, b.max.x - rayBuffer, b.min.y, Vector2.down);
-      raysUp = new RayRange(b.min.x + rayBuffer, b.max.y, b.max.x - rayBuffer, b.max.y, Vector2.up);
-      raysLeft = new RayRange(b.min.x, b.min.y + rayBuffer, b.min.x, b.max.y - rayBuffer, Vector2.left);
-      raysRight = new RayRange(b.max.x, b.min.y + rayBuffer, b.max.x, b.max.y - rayBuffer, Vector2.right);
-    }
-
-
-    private IEnumerable<Vector2> EvaluateRayPositions(RayRange range)
-    {
-      for (var i = 0; i < detectorCount; i++)
+      // Landed on the Ground
+      if (!grounded && groundHitCount > 0)
       {
-        var t = (float)i / (detectorCount - 1);
-        yield return Vector2.Lerp(range.Start, range.End, t);
+        grounded = true;
+        ResetDash();
+        ResetJump();
+        GroundedChanged?.Invoke(true, Mathf.Abs(speed.y));
       }
-    }
-
-    private void OnDrawGizmos()
-    {
-      DrawLedgeClimbingGizmos();
-      DrawWallCheckGizmos();
-
-      // Bounds
-      Gizmos.color = Color.yellow;
-      Gizmos.DrawWireCube(transform.position + characterBounds.center, characterBounds.size);
-
-      // Rays
-      if (!Application.isPlaying)
+      // Left the Ground
+      else if (grounded && groundHitCount == 0)
       {
-        CalculateRayRanged();
-        Gizmos.color = Color.blue;
-        foreach (var range in new List<RayRange> { raysUp, raysRight, raysDown, raysLeft })
-        {
-          foreach (var point in EvaluateRayPositions(range))
-          {
-            Gizmos.DrawRay(point, range.Dir * detectionRayLength);
-          }
-        }
+        grounded = false;
+        frameLeftGrounded = fixedFrame;
+        GroundedChanged?.Invoke(false, 0);
       }
-
-      if (!Application.isPlaying) return;
-
-      // Draw the future position. Handy for visualizing gravity
-      Gizmos.color = Color.red;
-      var move = new Vector3(currentHorizontalSpeed, currentVerticalSpeed) * Time.deltaTime;
-      Gizmos.DrawWireCube(transform.position + move, characterBounds.size);
     }
 
     #endregion
 
+    #region Walls
 
-    #region Walk
+    private float currentWallJumpMoveMultiplier = 1f; // aka "Horizontal input influence"
+    private int wallDirection;
+    private bool isOnWall;
 
-    [Header("WALKING")][SerializeField] private float acceleration = 90;
-    [SerializeField] private float moveClamp = 13;
-    [SerializeField] private float deAcceleration = 60f;
-    [SerializeField] private float apexBonus = 2;
-    private bool enableWalk = true;
-
-    private void CalculateWalk()
+    protected virtual void HandleWalls()
     {
-      if (!enableWalk) return;
+      if (!stats.AllowWalls) return;
 
-      if (MovementInput.X != 0)
+      currentWallJumpMoveMultiplier = Mathf.MoveTowards(currentWallJumpMoveMultiplier, 1f, 1f / stats.WallJumpInputLossFrames);
+
+      // May need to prioritize the nearest wall here... But who is going to make a climbable wall that tight?
+      wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].transform.position.x - transform.position.x) : 0;
+
+      if (!isOnWall && ShouldStickToWall()) SetOnWall(true);
+      else if (isOnWall && !ShouldStickToWall()) SetOnWall(false);
+
+      bool ShouldStickToWall()
       {
-        // Set horizontal move speed
-        currentHorizontalSpeed += MovementInput.X * acceleration * Time.deltaTime;
+        if (wallDirection == 0 || grounded) return false;
+        if (stats.RequireInputPush) return Mathf.Sign(frameInput.Move.x) == wallDirection;
+        return true;
+      }
+    }
 
-        // clamped by max frame movement
-        currentHorizontalSpeed = Mathf.Clamp(currentHorizontalSpeed, -moveClamp, moveClamp);
+    private void SetOnWall(bool on)
+    {
+      isOnWall = on;
+      if (on) speed = Vector2.zero;
+      WallGrabChanged?.Invoke(on);
+    }
 
-        // Apply bonus at the apex of a jump
-        var apexBonus = Mathf.Sign(MovementInput.X) * this.apexBonus * apexPoint;
-        currentHorizontalSpeed += apexBonus * Time.deltaTime;
+    #endregion
 
-        // Flip logic
-        if ((MovementInput.X > 0.01f && !facingRight) || (MovementInput.X < -0.01f && facingRight))
-        {
-          shouldFlip = true;
-          if (!Grounded)
-          {
-            Flip();
-          }
-        }
+    #region Ladders
+
+    private Vector2 ladderSnapVel; // TODO: determine if we need to reset this when leaving a ladder, or use a different kind of Lerp/MoveTowards
+    private int frameLeftLadder = int.MinValue;
+    private bool onLadder;
+
+    private bool CanEnterLadder => ladderHitCount > 0 && fixedFrame > frameLeftLadder + stats.LadderCooldownFrames;
+    private bool LadderInputReached => Mathf.Abs(frameInput.Move.y) > stats.LadderClimbThreshold;
+
+    protected virtual void HandleLadders()
+    {
+      if (!onLadder && CanEnterLadder && LadderInputReached) ToggleClimbingLadders(true);
+      else if (onLadder && ladderHitCount == 0) ToggleClimbingLadders(false);
+
+      // Snap to center of ladder
+      if (onLadder && frameInput.Move.x == 0 && stats.SnapToLadders && hasControl)
+      {
+        var pos = rigidBody.position;
+        rigidBody.position = Vector2.SmoothDamp(pos, new Vector2(ladderHits[0].transform.position.x, pos.y), ref ladderSnapVel, stats.LadderSnapSpeed);
+      }
+    }
+
+    private void ToggleClimbingLadders(bool on)
+    {
+      if (on)
+      {
+        onLadder = true;
+        speed = Vector2.zero;
       }
       else
       {
-        // No input. Let's slow the character down
-        currentHorizontalSpeed = Mathf.MoveTowards(currentHorizontalSpeed, 0, deAcceleration * Time.deltaTime);
-      }
-
-      if (currentHorizontalSpeed > 0 && collisionRight || currentHorizontalSpeed < 0 && collisionLeft)
-      {
-        // Don't walk through walls
-        currentHorizontalSpeed = 0;
+        if (!onLadder) return;
+        frameLeftLadder = fixedFrame;
+        onLadder = false;
       }
     }
 
     #endregion
 
-    #region Gravity
+    #region Ledges
 
-    [Header("GRAVITY")]
-    [SerializeField] private float fallClamp = -40f;
-    [SerializeField] private float minFallSpeed = 80f;
-    [SerializeField] private float maxFallSpeed = 120f;
-    private float fallSpeed;
-    private bool enableGravity = true;
+    private Vector2 ledgeCornerPos;
+    private bool grabbingLedge;
+    private bool climbingLedge;
 
-    private void CalculateGravity()
+    protected virtual void HandleLedges()
     {
-      if (!enableGravity) return;
+      if (climbingLedge || !isOnWall) return;
 
-      if (collisionDown)
+      grabbingLedge = TryGetLedgeCorner(out ledgeCornerPos);
+
+      if (grabbingLedge) HandleLedgeGrabbing();
+    }
+
+    protected virtual bool TryGetLedgeCorner(out Vector2 cornerPos)
+    {
+      cornerPos = Vector2.zero;
+      Vector2 grabHeight = rigidBody.position + stats.LedgeGrabPoint.y * Vector2.up;
+
+      var hit1 = Physics2D.Raycast(grabHeight - stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.5f, stats.ClimbableLayer);
+      if (!hit1.collider) return false; // Should hit below the ledge. Only used to determine xPos accurately
+
+      var hit2 = Physics2D.Raycast(grabHeight + stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.5f, stats.ClimbableLayer);
+      if (hit2.collider) return false; // we only are within ledge-grab range when the first hits and second doesn't
+
+      var hit3 = Physics2D.Raycast(grabHeight + new Vector2(wallDirection * 0.5f, stats.LedgeRaycastSpacing), Vector2.down, 0.5f, stats.ClimbableLayer);
+      if (!hit3.collider) return false; // gets our yPos of the corner
+
+      cornerPos = new Vector2(hit1.point.x, hit3.point.y);
+      return true;
+    }
+
+    protected virtual void HandleLedgeGrabbing()
+    {
+      // Snap to ledge position
+      var xInput = frameInput.Move.x;
+      var yInput = frameInput.Move.y;
+      if (yInput != 0 && (xInput == 0 || Mathf.Sign(xInput) == wallDirection) && hasControl)
       {
-        // Move out of the ground
-        if (currentVerticalSpeed < 0) currentVerticalSpeed = 0;
-        jumpState = JumpState.Grounded;
+        var pos = rigidBody.position;
+        var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(wallDirection, 1f));
+        rigidBody.position = Vector2.MoveTowards(pos, targetPos, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
       }
-      else
-      {
-        // Add downward force while ascending if we ended the jump early
-        var fallSpeed = endedJumpEarly && currentVerticalSpeed > 0 ? this.fallSpeed * jumpEndEarlyGravityModifier : this.fallSpeed;
 
-        // Fall
-        currentVerticalSpeed -= fallSpeed * Time.deltaTime;
+      // TODO: Create new stat variable instead of using Ladders or rename it to "vertical deadzone", "deadzone threshold", etc.
+      if (yInput > stats.LadderClimbThreshold)
+        StartCoroutine(ClimbLedge());
+    }
 
-        // Clamp
-        if (currentVerticalSpeed < fallClamp) currentVerticalSpeed = fallClamp;
-      }
+    protected virtual IEnumerator ClimbLedge()
+    {
+      LedgeClimbChanged?.Invoke(true);
+      climbingLedge = true;
+
+      TakeAwayControl();
+      var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(wallDirection, 1f));
+      transform.position = targetPos;
+
+      float lockedUntil = Time.time + stats.LedgeClimbDuration;
+      while (Time.time < lockedUntil)
+        yield return new WaitForFixedUpdate();
+
+      LedgeClimbChanged?.Invoke(false);
+      climbingLedge = false;
+      grabbingLedge = false;
+      SetOnWall(false);
+
+      targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+      transform.position = targetPos;
+      ReturnControl();
+    }
+
+    #endregion
+
+    #region Crouching
+
+    private readonly Collider2D[] crouchHits = new Collider2D[5];
+    private int frameStartedCrouching;
+    private bool crouching;
+
+    protected virtual bool CrouchPressed => frameInput.Move.y <= stats.CrouchInputThreshold;
+
+    protected virtual void HandleCrouching()
+    {
+      if (crouching && onLadder) SetCrouching(false); // use standing collider when on ladder
+      else if (crouching != CrouchPressed) SetCrouching(!crouching);
+    }
+
+    protected virtual void SetCrouching(bool active)
+    {
+      if (!crouching && (onLadder || isOnWall)) return; // Prevent crouching if climbing
+      if (crouching && !CanStandUp()) return; // Prevent standing into colliders
+
+      crouching = active;
+      playerCollider = colliders[active ? 1 : 0];
+      colliders[0].enabled = !active;
+      colliders[1].enabled = active;
+
+      if (crouching) frameStartedCrouching = fixedFrame;
+    }
+
+    protected bool CanStandUp()
+    {
+      var pos = rigidBody.position + (Vector2)standingColliderBounds.center + new Vector2(0, standingColliderBounds.extents.y);
+      var size = new Vector2(standingColliderBounds.size.x, stats.CrouchBufferCheck);
+
+      Physics2D.queriesHitTriggers = false;
+      var hits = Physics2D.OverlapBoxNonAlloc(pos, size, 0, crouchHits, ~stats.PlayerLayer);
+      Physics2D.queriesHitTriggers = cachedTriggerSetting;
+
+      return hits == 0;
     }
 
     #endregion
 
     #region Jump
 
-    [Header("JUMPING")][SerializeField] private float jumpHeight = 30;
-    [SerializeField] private float jumpApexThreshold = 10f;
-    [SerializeField] private float coyoteTimeThreshold = 0.1f;
-    [SerializeField] private float jumpBuffer = 0.1f;
-    [SerializeField] private float jumpEndEarlyGravityModifier = 3;
+    private bool jumpToConsume;
     private bool coyoteUsable;
-    private bool endedJumpEarly = true;
-    private float apexPoint; // Becomes 1 at the apex of a jump
-    private float lastJumpPressed;
-    private bool CanUseCoyote => coyoteUsable && !collisionDown && timeLeftGrounded + coyoteTimeThreshold > Time.time;
-    private bool HasBufferedJump => collisionDown && lastJumpPressed + jumpBuffer > Time.time;
+    private bool doubleJumpUsable;
+    private bool bufferedJumpUsable;
+    private int frameJumpWasPressed = int.MinValue;
+    private int frameJumpWasReleased = int.MinValue;
+    private bool jumpReleased;
 
-    private JumpState jumpState;
-    private bool enableJump = true;
+    private bool CanUseCoyote => coyoteUsable && !grounded && fixedFrame < frameLeftGrounded + stats.CoyoteFrames;
+    private bool HasBufferedJump => bufferedJumpUsable && fixedFrame < frameJumpWasPressed + stats.JumpBufferFrames;
+    private bool CanDoubleJump => doubleJumpUsable && stats.AllowDoubleJump;
 
-    private void CalculateJumpApex()
+    protected virtual void HandleJump()
     {
-      if (!collisionDown)
+      if (jumpToConsume || HasBufferedJump)
       {
-        // Gets stronger the closer to the top of the jump
-        apexPoint = Mathf.InverseLerp(jumpApexThreshold, 0, Mathf.Abs(Velocity.y));
-        fallSpeed = Mathf.Lerp(minFallSpeed, maxFallSpeed, apexPoint);
+        if (grounded || onLadder || CanUseCoyote) NormalJump();
+        else if (isOnWall) WallJump();
+        else if (jumpToConsume && CanDoubleJump) DoubleJump();
       }
-      else
-      {
-        apexPoint = 0;
-      }
+
+      jumpToConsume = false; // Always consume the flag
     }
 
-    private void CalculateVelocityDirection()
+    protected virtual void NormalJump()
     {
-      if (currentVerticalSpeed > 0)
-      {
-        // Going up
-        jumpState = JumpState.Jumping;
-      }
-      else if (currentVerticalSpeed < 0)
-      {
-        // Going down
-        jumpState = JumpState.Falling;
-      }
+      bufferedJumpUsable = false;
+      coyoteUsable = false;
+      doubleJumpUsable = true;
+      ToggleClimbingLadders(false);
+      speed.y = stats.JumpPower;
+      Jumped?.Invoke(false);
     }
 
-    private void CalculateJump()
+    protected virtual void WallJump()
     {
-      if (!enableJump) return;
+      bufferedJumpUsable = false;
+      doubleJumpUsable = true; // note: double jump isn't currently refreshed after detaching from wall w/o jumping
+      currentWallJumpMoveMultiplier = 0;
+      SetOnWall(false);
+      speed = Vector2.Scale(stats.WallJumpPower, new(-wallDirection, 1));
+      Jumped?.Invoke(true);
+    }
 
-      // Jump if: grounded or within coyote threshold || sufficient jump buffer
-      if (jumpPressed && CanUseCoyote || HasBufferedJump)
-      {
-        currentVerticalSpeed = jumpHeight;
-        endedJumpEarly = false;
-        coyoteUsable = false;
-        timeLeftGrounded = float.MinValue;
-        JumpingThisFrame = true;
-        jumpPressed = false;
-        jumpState = JumpState.Jumping;
-      }
-      else
-      {
-        JumpingThisFrame = false;
-      }
+    protected virtual void DoubleJump()
+    {
+      doubleJumpUsable = false;
+      speed.y = stats.JumpPower;
+      DoubleJumped?.Invoke();
+    }
 
-      if (collisionUp)
-      {
-        if (currentVerticalSpeed > 0) currentVerticalSpeed = 0;
-      }
+    protected virtual void ResetJump()
+    {
+      coyoteUsable = true;
+      bufferedJumpUsable = true;
+      doubleJumpUsable = false;
     }
 
     #endregion
 
-    #region Move
+    #region Dash
 
-    [Header("MOVE")]
-    [SerializeField, Tooltip("Raising this value increases collision accuracy at the cost of performance.")]
-    private int freeColliderIterations = 10;
-    private bool facingRight = true;
-    public bool shouldFlip = false;
+    private bool dashToConsume;
+    private bool canDash;
+    private Vector2 dashVel;
+    private bool dashing;
+    private int startedDashing;
+    private Vector2 dashDirection = Vector2.zero;
 
-    // We cast our bounds before moving to avoid future collisions
-    private void MoveCharacter()
+    protected virtual void HandleDash()
     {
-      var pos = transform.position;
-      RawMovement = new Vector3(currentHorizontalSpeed, currentVerticalSpeed); // Used externally
-      var move = RawMovement * Time.deltaTime;
-      var furthestPoint = pos + move;
-
-      // check furthest movement. If nothing hit, move and don't do extra checks
-      var hit = Physics2D.OverlapBox(furthestPoint, characterBounds.size, 0, groundLayer);
-      if (!hit)
+      if (dashToConsume && canDash && !crouching)
       {
-        transform.position += move;
-        return;
-      }
-
-      // otherwise increment away from current pos; see what closest position we can move to
-      var positionToMoveTo = transform.position;
-      for (int i = 1; i < freeColliderIterations; i++)
-      {
-        // increment to check all but furthestPoint - we did that already
-        var t = (float)i / freeColliderIterations;
-        var posToTry = Vector2.Lerp(pos, furthestPoint, t);
-
-        if (Physics2D.OverlapBox(posToTry, characterBounds.size, 0, groundLayer))
+        var dir = dashDirection.normalized;
+        if (dir == Vector2.zero)
         {
-          transform.position = positionToMoveTo;
-
-          // We've landed on a corner or hit our head on a ledge. Nudge the player gently
-          if (i == 1)
-          {
-            if (currentVerticalSpeed < 0) currentVerticalSpeed = 0;
-            // var dir = transform.position - hit.transform.position;
-            // transform.position += dir.normalized * move.magnitude;
-          }
-
+          dashToConsume = false;
           return;
         }
 
-        positionToMoveTo = posToTry;
+        dashVel = dir * stats.DashVelocity;
+        dashing = true;
+        canDash = false;
+        startedDashing = fixedFrame;
+        DashingChanged?.Invoke(true, dir);
+
+        // Strip external buildup
+        currentExternalVelocity = Vector2.zero;
       }
+
+      if (dashing)
+      {
+        speed = dashVel;
+        // Cancel when the time is out or we've reached our max safety distance
+        if (fixedFrame > startedDashing + stats.DashDurationFrames)
+        {
+          dashing = false;
+          DashingChanged?.Invoke(false, Vector2.zero);
+          if (speed.y > 0) speed.y = 0;
+          speed.x *= stats.DashEndHorizontalMultiplier;
+          if (grounded) canDash = true;
+        }
+      }
+
+      dashToConsume = false;
     }
 
-    public void Flip()
+    protected virtual void ResetDash()
     {
-      Vector3 currentScale = transform.localScale;
-      currentScale.x *= -1;
-      transform.localScale = currentScale;
-      facingRight = !facingRight;
-      shouldFlip = false;
+      canDash = true;
     }
 
     #endregion
 
-    #region Ledge Climbing
-    public void CalculateLedgeClimb()
+    #region Attacking
+
+    private bool attackToConsume;
+    private int frameLastAttacked = int.MinValue;
+
+    protected virtual void HandleAttacking()
     {
-      if (Grounded) return;
+      if (!attackToConsume) return;
 
-      if (!canLedgeClimb) return;
-
-      if (isLedgeClimbing) return;
-
-      if (pushingWall && !isAgainstWall)
+      if (fixedFrame > frameLastAttacked + stats.AttackFrameCooldown)
       {
-        if (facingRight)
-        {
-          ledgePositionBottom = transform.position + new Vector3(wallCheckOffset.x, wallCheckOffset.y);
+        frameLastAttacked = fixedFrame;
+        Attacked?.Invoke();
+      }
 
-          ledgeStartPosition = new Vector2(Mathf.Ceil(ledgePositionBottom.x - wallCheckDistance) + ledgeClimbOffset1.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset1.y);
-          ledgeEndPosition = new Vector2(Mathf.Ceil(ledgePositionBottom.x - wallCheckDistance) - ledgeClimbOffset2.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset2.y);
+      attackToConsume = false;
+    }
+
+    #endregion
+
+    #region Horizontal
+
+    protected virtual void HandleHorizontal()
+    {
+      if (dashing) return;
+
+      if (frameInput.Move.x != 0)
+      {
+        if (crouching && grounded)
+        {
+          var crouchPoint = Mathf.InverseLerp(0, stats.CrouchSlowdownFrames, fixedFrame - frameStartedCrouching);
+          var diminishedMaxSpeed = stats.MaxSpeed * Mathf.Lerp(1, stats.CrouchSpeedPenalty, crouchPoint);
+
+          speed.x = Mathf.MoveTowards(speed.x, diminishedMaxSpeed * frameInput.Move.x, stats.GroundDeceleration * Time.fixedDeltaTime);
         }
         else
         {
-          ledgePositionBottom = transform.position + new Vector3(-wallCheckOffset.x, wallCheckOffset.y);
+          // Prevent useless horizontal speed buildup when against a wall
+          if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x))
+            speed.x = 0;
 
-          ledgeStartPosition = new Vector2(Mathf.Floor(ledgePositionBottom.x + wallCheckDistance) - ledgeClimbOffset1.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset1.y);
-          ledgeEndPosition = new Vector2(Mathf.Floor(ledgePositionBottom.x + wallCheckDistance) + ledgeClimbOffset2.x, Mathf.Floor(ledgePositionBottom.y) + ledgeClimbOffset2.y);
+          var inputX = frameInput.Move.x * (onLadder ? stats.LadderShimmySpeedMultiplier : 1);
+          speed.x = Mathf.MoveTowards(speed.x, inputX * stats.MaxSpeed, currentWallJumpMoveMultiplier * stats.Acceleration * Time.fixedDeltaTime);
         }
-
-        isLedgeClimbing = true;
-        // canDash = false;
-        enableJump = false;
-        enableWalk = false;
-        jumpState = JumpState.LedgeClimbing;
-        enableGravity = false;
       }
-
-      if (isLedgeClimbing)
-      {
-        currentVerticalSpeed = 0;
-        currentHorizontalSpeed = 0;
-        transform.position = ledgeStartPosition;
-        StartCoroutine(LedgeClimb());
-      }
+      else
+        speed.x = Mathf.MoveTowards(speed.x, 0, (grounded ? stats.GroundDeceleration : stats.AirDeceleration) * Time.fixedDeltaTime);
     }
 
-    void UpdateClimbPosition(int state)
-    {
-      float xMultiplier = facingRight ? 1f : -1f;
-      if (state == 3)
-      {
-        transform.position += new Vector3(0f * xMultiplier, .2f);
-      }
-      else if (state == 4)
-      {
-        // transform.position += new Vector3(.2f * xMultiplier, .1f);
-        transform.position += new Vector3(0f * xMultiplier, .1f);
-      }
-      else if (state == 5)
-      {
-        // transform.position += new Vector3(.3f * xMultiplier, .15f);
-        transform.position += new Vector3(.0f * xMultiplier, .15f);
-      }
-      else if (state == 6)
-      {
-        transform.position += new Vector3(.3f * xMultiplier, .15f);
-      }
-      else if (state == 7)
-      {
-        transform.position = ledgeEndPosition;
-      }
-    }
-
-    private IEnumerator LedgeClimb()
-    {
-      yield return new WaitForSeconds(8f / 18f);
-      FinishLedgeClimb();
-    }
-
-    public void FinishLedgeClimb()
-    {
-      enableGravity = true;
-      transform.position = ledgeEndPosition;
-      isLedgeClimbing = false;
-      // enableDash = true;
-      enableJump = true;
-      enableWalk = true;
-      jumpState = JumpState.Grounded;
-    }
-
-    private void DrawLedgeClimbingGizmos()
-    {
-      Gizmos.color = Color.cyan;
-      Gizmos.DrawLine(ledgeStartPosition, ledgeEndPosition);
-    }
-    private void DrawWallCheckGizmos()
-    {
-      float xOffset = facingRight ? wallCheckOffset.x : -wallCheckOffset.x;
-      float xDistance = facingRight ? wallCheckDistance : -wallCheckDistance;
-
-      Gizmos.color = Color.magenta;
-      // Wall check
-      Gizmos.DrawLine(transform.position + new Vector3(xOffset, wallCheckOffset.y), transform.position + new Vector3(xOffset, wallCheckOffset.y) + new Vector3(xDistance, 0));
-
-      Gizmos.color = Color.yellow;
-      // Ledge check
-      Gizmos.DrawLine(transform.position + new Vector3(xOffset, ledgeCheckOffsetY), transform.position + new Vector3(xOffset, ledgeCheckOffsetY) + new Vector3(xDistance, 0));
-    }
     #endregion
+
+    #region Vertical
+
+    private Vector2 groundNormal;
+
+    protected virtual void HandleVertical()
+    {
+      if (dashing) return;
+
+      // Ladder
+      if (onLadder)
+      {
+        var inputY = frameInput.Move.y;
+        speed.y = inputY * (inputY > 0 ? stats.LadderClimbSpeed : stats.LadderSlideSpeed);
+
+        return;
+      }
+
+      // Grounded & Slopes
+      if (grounded && speed.y <= 0f)
+      {
+        speed.y = stats.GroundingForce;
+
+        // We use a raycast here as the groundHits from capsule cast act a bit weird.
+        Physics2D.queriesHitTriggers = false;
+        var hit = Physics2D.Raycast(transform.position, Vector2.down, stats.GrounderDistance * 2, ~stats.PlayerLayer);
+        Physics2D.queriesHitTriggers = cachedTriggerSetting;
+        if (hit.collider != null)
+        {
+          groundNormal = hit.normal;
+
+          if (!Mathf.Approximately(groundNormal.y, 1f))
+          { // on a slope
+            speed.y = speed.x * -groundNormal.x / groundNormal.y;
+            if (speed.x != 0) speed.y += stats.GroundingForce;
+          }
+        }
+        else
+          groundNormal = Vector2.zero;
+
+        return;
+      }
+
+      // Wall Climbing & Sliding
+      if (isOnWall)
+      {
+        if (frameInput.Move.y > 0) speed.y = stats.WallClimbSpeed;
+        else if (frameInput.Move.y < 0) speed.y = -stats.MaxWallFallSpeed; // TODO: new stat variable for better feel?
+        else if (grabbingLedge) speed.y = Mathf.MoveTowards(speed.y, 0, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
+        else speed.y = Mathf.MoveTowards(Mathf.Min(speed.y, 0), -stats.MaxWallFallSpeed, stats.WallFallAcceleration * Time.fixedDeltaTime);
+
+        return;
+      }
+
+      // In Air
+      var fallSpeed = stats.FallAcceleration;
+      speed.y = Mathf.MoveTowards(speed.y, -stats.MaxFallSpeed, fallSpeed * Time.fixedDeltaTime);
+    }
+
+    #endregion
+
+    protected virtual void ApplyVelocity()
+    {
+      if (!hasControl) return;
+      rigidBody.velocity = speed + currentExternalVelocity;
+
+      currentExternalVelocity = Vector2.MoveTowards(currentExternalVelocity, Vector2.zero, stats.ExternalVelocityDecay * Time.fixedDeltaTime);
+    }
+
+
+    private void OnDrawGizmos()
+    {
+      if (stats.ShowWallDetection)
+      {
+        Gizmos.color = Color.white;
+        var bounds = GetWallDetectionBounds();
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
+      }
+      if (stats.ShowLedgeDetection)
+      {
+        Gizmos.color = Color.red;
+        var facingDir = Mathf.Sign(wallDirection);
+        var grabHeight = transform.position + stats.LedgeGrabPoint.y * Vector3.up;
+        var grabPoint = grabHeight + facingDir * stats.LedgeGrabPoint.x * Vector3.right;
+        Gizmos.DrawWireSphere(grabPoint, 0.05f);
+        Gizmos.DrawWireSphere(grabPoint + Vector3.Scale(stats.StandUpOffset, new(facingDir, 1)), 0.05f);
+        Gizmos.DrawRay(grabHeight - stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
+        Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
+      }
+    }
   }
 }

@@ -12,12 +12,12 @@ using UnityEditor;
 /// </summary>
 public struct PointerInput
 {
-    public bool Contact;
+  public bool Contact;
 
-    /// <summary>
-    /// Position of draw input.
-    /// </summary>
-    public Vector2 Position;
+  /// <summary>
+  /// Position of draw input.
+  /// </summary>
+  public Vector2 Position;
 }
 
 // What we do in PointerInputManager is to simply create a separate action for each input we need for PointerInput.
@@ -50,13 +50,13 @@ public class PointerInputComposite : InputBindingComposite<PointerInput>
     };
   }
 
-  #if UNITY_EDITOR
+#if UNITY_EDITOR
   static PointerInputComposite()
   {
     Register();
   }
 
-  #endif
+#endif
 
   [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
   private static void Register()

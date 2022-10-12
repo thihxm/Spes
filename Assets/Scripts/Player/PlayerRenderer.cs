@@ -5,7 +5,7 @@ using Aarthificial.Reanimation;
 
 namespace Player
 {
-  public class PlayerRenderer : MonoBehaviour
+  public class PlayerRenderer : Singleton<PlayerRenderer>
   {
     private static class Drivers
     {
@@ -26,56 +26,78 @@ namespace Player
     private Reanimator reanimator;
     private PlayerController controller;
 
+    // private bool _landed;
+    // private bool grounded;
+
     private void Awake()
     {
       reanimator = GetComponent<Reanimator>();
-      controller = GetComponent<PlayerController>();
+      controller = PlayerController.Instance;
+      // controller.GroundedChanged += OnGroundedChanged;
     }
 
-    private void OnEnable()
-    {
-      reanimator.AddListener(Drivers.Climbing, OnClimbing);
-      reanimator.AddListener(Drivers.FlipEvent, FlipEvent);
-    }
+    // private void OnEnable()
+    // {
+    //   reanimator.AddListener(Drivers.Climbing, OnClimbing);
+    //   reanimator.AddListener(Drivers.FlipEvent, FlipEvent);
+    // }
 
-    private void OnDisable()
-    {
-      reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
-      reanimator.RemoveListener(Drivers.FlipEvent, FlipEvent);
-    }
+    // private void OnDisable()
+    // {
+    //   reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
+    //   reanimator.RemoveListener(Drivers.FlipEvent, FlipEvent);
+    // }
 
-    private void Update()
-    {
-      var velocity = controller.Velocity;
-      bool isMoving = Mathf.Abs(controller.RawMovement.x) > 0 && Mathf.Abs(velocity.x) > 0.01f;
+    // private void Update()
+    // {
+    //   var velocity = controller.Speed;
+    //   bool isMoving = Mathf.Abs(controller.Input.x) > 0 && Mathf.Abs(velocity.x) > 0.01f;
 
-      // reanimator.Flip = !controller.facingRight;
-      reanimator.Set(Drivers.IsMoving, isMoving);
-      reanimator.Set(Drivers.IsGrounded, controller.Grounded);
-      // reanimator.Set(Drivers.IsDashing, controller.isDashing);
-      reanimator.Set(Drivers.JumpState, (int)controller.JumpState);
-      reanimator.Set(Drivers.ShouldFlip, controller.shouldFlip);
+    //   // reanimator.Flip = !controller.facingRight;
+    //   reanimator.Set(Drivers.IsMoving, isMoving);
+    //   reanimator.Set(Drivers.IsGrounded, controller.GroundNormal);
+    //   reanimator.Set(Drivers.IsDashing, controller.Dashing);
+    //   reanimator.Set(Drivers.JumpState, (int)controller.JumpState);
+    //   reanimator.Set(Drivers.ShouldFlip, controller.shouldFlip);
 
-      bool didLandInThisFrame = reanimator.WillChange(Drivers.IsGrounded, true);
+    //   bool didLandInThisFrame = reanimator.WillChange(Drivers.IsGrounded, true);
 
-      if (didLandInThisFrame)
-      {
-        reanimator.ForceRerender();
-      }
-    }
+    //   if (didLandInThisFrame)
+    //   {
+    //     reanimator.ForceRerender();
+    //   }
+    // }
 
-    private void FlipEvent()
-    {
-      controller.Flip();
-    }
+    // private void OnGroundedChanged(bool grounded, float impactForce)
+    // {
+    //   this.grounded = grounded;
 
-    private void OnClimbing()
-    {
-      int climbingState = reanimator.State.Get(Drivers.Climbing, 0);
-      if (climbingState > 0)
-      {
-        OnChangeClimbState?.Invoke(climbingState);
-      }
-    }
+    //   if (impactForce >= _minImpactForce)
+    //   {
+    //     var p = Mathf.InverseLerp(0, _minImpactForce, impactForce);
+    //     _landed = true;
+    //     _landParticles.transform.localScale = p * Vector3.one;
+    //     _landParticles.Play();
+    //     SetColor(_landParticles);
+    //     PlaySound(_landClip, p * 0.1f);
+    //   }
+
+    //   if (this.grounded) _moveParticles.Play();
+    //   else _moveParticles.Stop();
+    // }
+
+    // private void FlipEvent()
+    // {
+    //   controller.Flip();
+    // }
+
+    // private void OnClimbing()
+    // {
+    //   int climbingState = reanimator.State.Get(Drivers.Climbing, 0);
+    //   if (climbingState > 0)
+    //   {
+    //     OnChangeClimbState?.Invoke(climbingState);
+    //   }
+    // }
   }
 }
