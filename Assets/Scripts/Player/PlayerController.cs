@@ -47,6 +47,8 @@ namespace Player
     public bool GrabbingLedge => grabbingLedge;
     public bool ClimbingLedge => climbingLedge;
 
+    public bool FacingRight => isFacingRight;
+
     public virtual void ApplyVelocity(Vector2 vel, PlayerForce forceType)
     {
       if (forceType == PlayerForce.Burst) speed += vel;
@@ -575,6 +577,8 @@ namespace Player
     #endregion
 
     #region Horizontal
+    private bool isFacingRight = true;
+    public bool shouldFlip = false;
 
     protected virtual void HandleHorizontal()
     {
@@ -598,9 +602,28 @@ namespace Player
           var inputX = frameInput.Move.x * (onLadder ? stats.LadderShimmySpeedMultiplier : 1);
           speed.x = Mathf.MoveTowards(speed.x, inputX * stats.MaxSpeed, currentWallJumpMoveMultiplier * stats.Acceleration * Time.fixedDeltaTime);
         }
+
+        // Flip logic
+        if ((frameInput.Move.x > 0.01f && !isFacingRight) || (frameInput.Move.x < -0.01f && isFacingRight))
+        {
+          shouldFlip = true;
+          if (!grounded)
+          {
+            Flip();
+          }
+        }
       }
       else
         speed.x = Mathf.MoveTowards(speed.x, 0, (grounded ? stats.GroundDeceleration : stats.AirDeceleration) * Time.fixedDeltaTime);
+    }
+
+    public void Flip()
+    {
+      Vector3 currentScale = transform.localScale;
+      currentScale.x *= -1;
+      transform.localScale = currentScale;
+      isFacingRight = !isFacingRight;
+      shouldFlip = false;
     }
 
     #endregion

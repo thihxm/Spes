@@ -33,6 +33,7 @@ namespace Player
     public bool Crouching { get; }
     public bool ClimbingLadder { get; }
     public bool GrabbingLedge { get; }
+    public bool FacingRight { get; }
     public bool ClimbingLedge { get; }
     public void ApplyVelocity(Vector2 vel, PlayerForce forceType);
   }
