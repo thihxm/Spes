@@ -30,7 +30,6 @@ namespace Player
     public Vector2 GroundNormal { get; }
     public int WallDirection { get; }
     public bool Crouching { get; }
-    public bool ClimbingLadder { get; }
     public bool GrabbingLedge { get; }
     public bool FacingRight { get; }
     public bool ClimbingLedge { get; }

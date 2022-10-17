@@ -39,22 +39,13 @@ MonoBehaviour:
   MaxWallFallSpeed: 15
   WallJumpPower: {x: 30, y: 25}
   WallJumpInputLossFrames: 18
-  SnapToLadders: 0
-  LadderLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  LadderSnapSpeed: 0.05
-  LadderShimmySpeedMultiplier: 0.5
-  LadderClimbSpeed: 8
-  LadderSlideSpeed: 12
-  LadderCooldownFrames: 8
-  LadderClimbThreshold: 0.3
   AllowLedges: 1
   LedgeGrabDeceleration: 4
   LedgeGrabPoint: {x: 0.42, y: 0.92}
   StandUpOffset: {x: 0.5, y: 0.05}
   LedgeRaycastSpacing: 0.2
   LedgeClimbDuration: 0.5
+  VerticalDeadzone: 0.3
   AllowDash: 1
   DashVelocity: 50
   DashDurationFrames: 8

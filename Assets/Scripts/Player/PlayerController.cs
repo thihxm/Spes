@@ -45,7 +45,6 @@ namespace Player
     public Vector2 GroundNormal => groundNormal;
     public int WallDirection => wallDirection;
     public bool Crouching => crouching;
-    public bool ClimbingLadder => onLadder;
     public bool GrabbingLedge => grabbingLedge;
     public bool ClimbingLedge => climbingLedge;
 
@@ -123,6 +122,7 @@ namespace Player
 
     private void HandleDashInput(Vector2 swipeDelta)
     {
+      Debug.Log("HandleDashInput");
       if (!dashing && !grounded)
       {
         dashDirection = CalculateDashDirection(swipeDelta);
@@ -176,7 +176,6 @@ namespace Player
       HandleCollisions();
       HandleWalls();
       HandleLedges();
-      HandleLadders();
 
       HandleCrouching();
       HandleJump();
@@ -193,11 +192,9 @@ namespace Player
     private readonly RaycastHit2D[] groundHits = new RaycastHit2D[2];
     private readonly RaycastHit2D[] ceilingHits = new RaycastHit2D[2];
     private readonly Collider2D[] wallHits = new Collider2D[5];
-    private readonly Collider2D[] ladderHits = new Collider2D[1];
     [SerializeField] private int groundHitCount;
     private int ceilingHitCount;
     private int wallHitCount;
-    private int ladderHitCount;
     private int frameLeftGrounded = int.MinValue;
     [SerializeField] private bool grounded;
 
@@ -210,13 +207,9 @@ namespace Player
       groundHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.down, groundHits, stats.GrounderDistance, ~stats.PlayerLayer);
       ceilingHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.up, ceilingHits, stats.GrounderDistance, ~stats.PlayerLayer);
 
-      // Walls and Ladders
+      // Walls
       var bounds = GetWallDetectionBounds();
       wallHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, wallHits, stats.ClimbableLayer);
-
-      Physics2D.queriesHitTriggers = true; // Ladders are set to Trigger
-      ladderHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, ladderHits, stats.LadderLayer);
-      Physics2D.queriesHitTriggers = cachedTriggerSetting;
     }
 
     private Bounds GetWallDetectionBounds()
@@ -284,45 +277,6 @@ namespace Player
 
     #endregion
 
-    #region Ladders
-
-    private Vector2 ladderSnapVel; // TODO: determine if we need to reset this when leaving a ladder, or use a different kind of Lerp/MoveTowards
-    private int frameLeftLadder = int.MinValue;
-    private bool onLadder;
-
-    private bool CanEnterLadder => ladderHitCount > 0 && fixedFrame > frameLeftLadder + stats.LadderCooldownFrames;
-    private bool LadderInputReached => Mathf.Abs(frameInput.Move.y) > stats.LadderClimbThreshold;
-
-    protected virtual void HandleLadders()
-    {
-      if (!onLadder && CanEnterLadder && LadderInputReached) ToggleClimbingLadders(true);
-      else if (onLadder && ladderHitCount == 0) ToggleClimbingLadders(false);
-
-      // Snap to center of ladder
-      if (onLadder && frameInput.Move.x == 0 && stats.SnapToLadders && hasControl)
-      {
-        var pos = rigidBody.position;
-        rigidBody.position = Vector2.SmoothDamp(pos, new Vector2(ladderHits[0].transform.position.x, pos.y), ref ladderSnapVel, stats.LadderSnapSpeed);
-      }
-    }
-
-    private void ToggleClimbingLadders(bool on)
-    {
-      if (on)
-      {
-        onLadder = true;
-        speed = Vector2.zero;
-      }
-      else
-      {
-        if (!onLadder) return;
-        frameLeftLadder = fixedFrame;
-        onLadder = false;
-      }
-    }
-
-    #endregion
-
     #region Ledges
 
     private Vector2 ledgeCornerPos;
@@ -372,7 +326,7 @@ namespace Player
       }
 
       // TODO: Create new stat variable instead of using Ladders or rename it to "vertical deadzone", "deadzone threshold", etc.
-      if (yInput > stats.LadderClimbThreshold)
+      if (yInput > stats.VerticalDeadzone)
         StartCoroutine(ClimbLedge());
     }
 
@@ -448,13 +402,11 @@ namespace Player
     {
       if (!stats.AllowCrouching) return;
 
-      if (crouching && onLadder) SetCrouching(false); // use standing collider when on ladder
       else if (crouching != CrouchPressed) SetCrouching(!crouching);
     }
 
     protected virtual void SetCrouching(bool active)
     {
-      if (!crouching && (onLadder || isOnWall)) return; // Prevent crouching if climbing
       if (crouching && !CanStandUp()) return; // Prevent standing into colliders
 
       crouching = active;
@@ -495,7 +447,7 @@ namespace Player
     {
       if (jumpToConsume || HasBufferedJump)
       {
-        if (grounded || onLadder || CanUseCoyote) NormalJump();
+        if (grounded || CanUseCoyote) NormalJump();
         else if (isOnWall) WallJump();
         else if (jumpToConsume && CanDoubleJump) DoubleJump();
       }
@@ -508,7 +460,6 @@ namespace Player
       bufferedJumpUsable = false;
       coyoteUsable = false;
       doubleJumpUsable = true;
-      ToggleClimbingLadders(false);
       speed.y = stats.JumpPower;
       Jumped?.Invoke(false);
     }
@@ -636,7 +587,7 @@ namespace Player
           if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x))
             speed.x = 0;
 
-          var inputX = frameInput.Move.x * (onLadder ? stats.LadderShimmySpeedMultiplier : 1);
+          var inputX = frameInput.Move.x;
           speed.x = Mathf.MoveTowards(speed.x, inputX * stats.MaxSpeed, currentWallJumpMoveMultiplier * stats.Acceleration * Time.fixedDeltaTime);
         }
 
@@ -672,15 +623,6 @@ namespace Player
     protected virtual void HandleVertical()
     {
       if (dashing) return;
-
-      // Ladder
-      if (onLadder)
-      {
-        var inputY = frameInput.Move.y;
-        speed.y = inputY * (inputY > 0 ? stats.LadderClimbSpeed : stats.LadderSlideSpeed);
-
-        return;
-      }
 
       // Grounded & Slopes
       if (grounded && speed.y <= 0f)

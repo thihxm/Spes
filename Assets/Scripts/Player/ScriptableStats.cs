@@ -83,31 +83,6 @@ namespace Player
     [Tooltip("The frames before full horizontal movement is returned after a wall jump"), Min(1)]
     public int WallJumpInputLossFrames = 18;
 
-    [Header("LADDERS")]
-    [Tooltip("Allow climbing ladders")]
-    public bool SnapToLadders = true;
-
-    [Tooltip("Set this to the layer your ladders are on")]
-    public LayerMask LadderLayer;
-
-    [Tooltip("Ladder snap speed")]
-    public float LadderSnapSpeed = 0.05f;
-
-    [Tooltip("Horizontal speed multiplier while attached to a ladder")]
-    public float LadderShimmySpeedMultiplier = 0.5f;
-
-    [Tooltip("How fast you climb ladders")]
-    public float LadderClimbSpeed = 8;
-
-    [Tooltip("How fast you slide down ladders")]
-    public float LadderSlideSpeed = 12;
-
-    [Tooltip("How many frames can pass between ladder interactions. Helps jittery movement and jumping glitches")]
-    public int LadderCooldownFrames = 8;
-
-    [Tooltip("Input required before you mount the ladder. Avoids unwanted climbing using controllers")]
-    public float LadderClimbThreshold = 0.3f;
-
     [Header("LEDGE")]
     [Tooltip("Allow ledge grabbing & climbing")]
     public bool AllowLedges = true;
@@ -126,6 +101,9 @@ namespace Player
 
     [Tooltip("How long movement will be locked out. Animation clip length")]
     public float LedgeClimbDuration = 0.5f;
+
+    [Tooltip("Input required before you mount the ladder. Avoids unwanted climbing using controllers")]
+    public float VerticalDeadzone = 0.3f;
 
     [Header("DASH")]
     [Tooltip("Allows the player to dash")]

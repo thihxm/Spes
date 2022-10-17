@@ -41,37 +41,38 @@ namespace Player
 
     public void ThrowWind(Vector2 swipeDelta)
     {
+      if (!grounded) return;
+
+      Debug.Log("ThrowWind");
+
       var windDirection = GetDirection(swipeDelta);
       if (windDirection == Direction.Stationary) return;
 
-      if (grounded)
+      if (windDirection == Direction.Left)
       {
-        if (windDirection == Direction.Left)
+        if (player.FacingRight)
         {
-          if (player.FacingRight)
-          {
-            Shoot(backPoint, (int)windDirection);
-          }
-          else
-          {
-            Shoot(frontPoint, (int)windDirection);
-          }
+          Shoot(backPoint, (int)windDirection);
         }
-        else if (windDirection == Direction.Right)
+        else
         {
-          if (player.FacingRight)
-          {
-            Shoot(frontPoint, (int)windDirection);
-          }
-          else
-          {
-            Shoot(backPoint, (int)windDirection);
-          }
+          Shoot(frontPoint, (int)windDirection);
         }
-        else if (windDirection == Direction.Up)
+      }
+      else if (windDirection == Direction.Right)
+      {
+        if (player.FacingRight)
         {
-          Shoot(topPoint, (int)windDirection);
+          Shoot(frontPoint, (int)windDirection);
         }
+        else
+        {
+          Shoot(backPoint, (int)windDirection);
+        }
+      }
+      else if (windDirection == Direction.Up)
+      {
+        Shoot(topPoint, (int)windDirection);
       }
     }
 

@@ -96,7 +96,7 @@ public class InputManager : Singleton<InputManager>
 
   private FrameInput Gather()
   {
-    if (windAction.IsInProgress())
+    if (windAction.WasPerformedThisFrame() && jumpAction.enabled)
     {
       jumpAction.Disable();
     }
