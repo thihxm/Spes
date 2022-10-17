@@ -255,7 +255,7 @@ namespace Player
       currentWallJumpMoveMultiplier = Mathf.MoveTowards(currentWallJumpMoveMultiplier, 1f, 1f / stats.WallJumpInputLossFrames);
 
       // May need to prioritize the nearest wall here... But who is going to make a climbable wall that tight?
-      wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].transform.position.x - transform.position.x) : 0;
+      wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].ClosestPoint(transform.position).x - transform.position.x) : 0;
 
       if (!isOnWall && ShouldStickToWall()) SetOnWall(true);
       else if (isOnWall && !ShouldStickToWall()) SetOnWall(false);
