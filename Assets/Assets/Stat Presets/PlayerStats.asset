@@ -33,7 +33,7 @@ MonoBehaviour:
   ClimbableLayer:
     serializedVersion: 2
     m_Bits: 128
-  RequireInputPush: 1
+  RequireInputPush: 0
   WallClimbSpeed: 5
   WallFallAcceleration: 8
   MaxWallFallSpeed: 15
@@ -42,7 +42,7 @@ MonoBehaviour:
   AllowLedges: 1
   LedgeGrabDeceleration: 4
   LedgeGrabPoint: {x: 0.42, y: 0.92}
-  StandUpOffset: {x: 0.5, y: 0.05}
+  StandUpOffset: {x: 1, y: 0.25}
   LedgeRaycastSpacing: 0.2
   LedgeClimbDuration: 0.5
   VerticalDeadzone: 0.3

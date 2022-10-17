@@ -192,11 +192,11 @@ namespace Player
     private readonly RaycastHit2D[] groundHits = new RaycastHit2D[2];
     private readonly RaycastHit2D[] ceilingHits = new RaycastHit2D[2];
     private readonly Collider2D[] wallHits = new Collider2D[5];
-    [SerializeField] private int groundHitCount;
+    private int groundHitCount;
     private int ceilingHitCount;
     private int wallHitCount;
     private int frameLeftGrounded = int.MinValue;
-    [SerializeField] private bool grounded;
+    private bool grounded;
 
     protected virtual void CheckCollisions()
     {
@@ -255,14 +255,22 @@ namespace Player
       currentWallJumpMoveMultiplier = Mathf.MoveTowards(currentWallJumpMoveMultiplier, 1f, 1f / stats.WallJumpInputLossFrames);
 
       // May need to prioritize the nearest wall here... But who is going to make a climbable wall that tight?
-      wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].ClosestPoint(transform.position).x - transform.position.x) : 0;
+      if (wallHitCount > 0)
+      {
+        wallDirection = (int)Mathf.Sign(wallHits[0].ClosestPoint(transform.position).x - transform.position.x);
+      }
+      else
+      {
+        wallDirection = isFacingRight ? 1 : -1;
+      }
+      // wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].ClosestPoint(transform.position).x - transform.position.x) : 0;
 
       if (!isOnWall && ShouldStickToWall()) SetOnWall(true);
       else if (isOnWall && !ShouldStickToWall()) SetOnWall(false);
 
       bool ShouldStickToWall()
       {
-        if (wallDirection == 0 || grounded) return false;
+        if (wallHitCount <= 0 || grounded) return false;
         if (stats.RequireInputPush) return Mathf.Sign(frameInput.Move.x) == wallDirection;
         return true;
       }
@@ -565,7 +573,7 @@ namespace Player
     #endregion
 
     #region Horizontal
-    private bool isFacingRight = true;
+    [SerializeField] private bool isFacingRight = true;
     public bool shouldFlip = false;
 
     protected virtual void HandleHorizontal()
@@ -652,9 +660,10 @@ namespace Player
       // Wall Climbing & Sliding
       if (isOnWall)
       {
-        if (frameInput.Move.y > 0) speed.y = stats.WallClimbSpeed;
-        else if (frameInput.Move.y < 0) speed.y = -stats.MaxWallFallSpeed; // TODO: new stat variable for better feel?
-        else if (grabbingLedge) speed.y = Mathf.MoveTowards(speed.y, 0, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
+        // if (frameInput.Move.y > 0) speed.y = stats.WallClimbSpeed;
+        // else if (frameInput.Move.y < 0) speed.y = -stats.MaxWallFallSpeed; // TODO: new stat variable for better feel?
+        // else 
+        if (grabbingLedge) speed.y = Mathf.MoveTowards(speed.y, 0, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
         else speed.y = Mathf.MoveTowards(Mathf.Min(speed.y, 0), -stats.MaxWallFallSpeed, stats.WallFallAcceleration * Time.fixedDeltaTime);
 
         return;
