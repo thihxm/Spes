@@ -22,6 +22,8 @@ namespace Player
     public float GroundingForce = -1.5f;
 
     [Header("CROUCHING")]
+    [Tooltip("Enable crouching")]
+    public bool AllowCrouching = true;
     [Tooltip("A dead-zone for controllers to prevent unintended crouching")]
     public float CrouchInputThreshold = -0.5f;
 

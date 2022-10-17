@@ -39,14 +39,16 @@ namespace Player
     private void OnEnable()
     {
       player.GroundedChanged += OnGroundedChanged;
-      // reanimator.AddListener(Drivers.Climbing, OnClimbing);
+      player.LedgeClimbChanged += OnLedgeClimbChanged;
+      reanimator.AddListener(Drivers.Climbing, OnClimbing);
       reanimator.AddListener(Drivers.FlipEvent, FlipEvent);
     }
 
     private void OnDisable()
     {
       player.GroundedChanged -= OnGroundedChanged;
-      // reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
+      player.LedgeClimbChanged -= OnLedgeClimbChanged;
+      reanimator.RemoveListener(Drivers.Climbing, OnClimbing);
       reanimator.RemoveListener(Drivers.FlipEvent, FlipEvent);
     }
 
@@ -75,8 +77,6 @@ namespace Player
     private void HandleAnimations()
     {
       GetState();
-      Debug.Log("jumpState: " + jumpState);
-      Debug.Log("flip: " + player.WallDirection);
       ResetFlags();
 
       void GetState()
@@ -208,8 +208,18 @@ namespace Player
 
     private void OnLedgeClimbChanged(bool isLedgeClimbing)
     {
+      Debug.Log("OnLedgeClimbChanged: " + isLedgeClimbing);
       this.isLedgeClimbing = isLedgeClimbing;
       if (!this.isLedgeClimbing) grounded = true;
+    }
+
+    private void OnClimbing()
+    {
+      int climbingState = reanimator.State.Get(Drivers.Climbing, 0);
+      if (climbingState > 0)
+      {
+        OnChangeClimbState?.Invoke(climbingState);
+      }
     }
 
     #endregion
@@ -218,14 +228,5 @@ namespace Player
     {
       player.Flip();
     }
-
-    // private void OnClimbing()
-    // {
-    //   int climbingState = reanimator.State.Get(Drivers.Climbing, 0);
-    //   if (climbingState > 0)
-    //   {
-    //     OnChangeClimbState?.Invoke(climbingState);
-    //   }
-    // }
   }
 }

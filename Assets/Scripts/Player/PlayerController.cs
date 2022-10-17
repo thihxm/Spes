@@ -26,6 +26,8 @@ namespace Player
     private int fixedFrame;
     private bool hasControl = true;
 
+    private PlayerRenderer playerRenderer;
+
     #endregion
 
     #region External
@@ -67,6 +69,7 @@ namespace Player
 
     public virtual void ReturnControl()
     {
+      Debug.Log("Returned Control");
       speed = Vector2.zero;
       hasControl = true;
     }
@@ -77,6 +80,7 @@ namespace Player
     {
       rigidBody = GetComponent<Rigidbody2D>();
       inputManager = InputManager.Instance;
+      playerRenderer = PlayerRenderer.Instance;
       colliders = GetComponents<CapsuleCollider2D>();
 
       // Colliders cannot be check whilst disabled. Let's cache its bounds
@@ -92,11 +96,13 @@ namespace Player
     protected virtual void OnEnable()
     {
       inputManager.OnThrowWind += HandleDashInput;
+      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     }
 
     protected virtual void OnDisable()
     {
       inputManager.OnThrowWind -= HandleDashInput;
+      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     }
 
     protected virtual void Update()
@@ -108,17 +114,10 @@ namespace Player
     {
       frameInput = inputManager.FrameInput;
 
-      if (frameInput.JumpDown)
+      if (frameInput.JumpTapped)
       {
         jumpToConsume = true;
-        jumpReleased = false;
         frameJumpWasPressed = fixedFrame;
-      }
-
-      if (frameInput.JumpUp)
-      {
-        jumpReleased = true;
-        frameJumpWasReleased = fixedFrame;
       }
     }
 
@@ -344,13 +343,13 @@ namespace Player
       cornerPos = Vector2.zero;
       Vector2 grabHeight = rigidBody.position + stats.LedgeGrabPoint.y * Vector2.up;
 
-      var hit1 = Physics2D.Raycast(grabHeight - stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.5f, stats.ClimbableLayer);
+      var hit1 = Physics2D.Raycast(grabHeight - stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.65f, stats.ClimbableLayer);
       if (!hit1.collider) return false; // Should hit below the ledge. Only used to determine xPos accurately
 
-      var hit2 = Physics2D.Raycast(grabHeight + stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.5f, stats.ClimbableLayer);
+      var hit2 = Physics2D.Raycast(grabHeight + stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.65f, stats.ClimbableLayer);
       if (hit2.collider) return false; // we only are within ledge-grab range when the first hits and second doesn't
 
-      var hit3 = Physics2D.Raycast(grabHeight + new Vector2(wallDirection * 0.5f, stats.LedgeRaycastSpacing), Vector2.down, 0.5f, stats.ClimbableLayer);
+      var hit3 = Physics2D.Raycast(grabHeight + new Vector2(wallDirection * 0.5f, stats.LedgeRaycastSpacing), Vector2.down, 0.65f, stats.ClimbableLayer);
       if (!hit3.collider) return false; // gets our yPos of the corner
 
       cornerPos = new Vector2(hit1.point.x, hit3.point.y);
@@ -359,14 +358,17 @@ namespace Player
 
     protected virtual void HandleLedgeGrabbing()
     {
+      if (grounded) return;
+
       // Snap to ledge position
       var xInput = frameInput.Move.x;
       var yInput = frameInput.Move.y;
-      if (yInput != 0 && (xInput == 0 || Mathf.Sign(xInput) == wallDirection) && hasControl)
+      if ((xInput == 0 || Mathf.Sign(xInput) == wallDirection) && hasControl)
       {
         var pos = rigidBody.position;
         var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(wallDirection, 1f));
         rigidBody.position = Vector2.MoveTowards(pos, targetPos, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
+        StartCoroutine(ClimbLedge());
       }
 
       // TODO: Create new stat variable instead of using Ladders or rename it to "vertical deadzone", "deadzone threshold", etc.
@@ -392,10 +394,45 @@ namespace Player
       grabbingLedge = false;
       SetOnWall(false);
 
-      targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
-      transform.position = targetPos;
+      // DISABLED: The animation is already updating the position, so this is redundant and causes jittering
+      // targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+      // transform.position = targetPos;
       ReturnControl();
     }
+
+    void UpdateClimbPosition(int state)
+    {
+      float xMultiplier = isFacingRight ? 1f : -1f;
+      var newPosition = transform.position;
+      if (state == 3)
+      {
+        newPosition += new Vector3(0f * xMultiplier, .2f);
+      }
+      else if (state == 4)
+      {
+        // transform.position += new Vector3(.2f * xMultiplier, .1f);
+        newPosition += new Vector3(0f * xMultiplier, .1f);
+      }
+      else if (state == 5)
+      {
+        // transform.position += new Vector3(.3f * xMultiplier, .15f);
+        newPosition += new Vector3(.0f * xMultiplier, .15f);
+      }
+      else if (state == 6)
+      {
+        newPosition += new Vector3(.3f * xMultiplier, .15f);
+      }
+      else if (state == 7)
+      {
+        newPosition = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+      }
+      else
+      {
+        return;
+      }
+      transform.position = newPosition;
+    }
+
 
     #endregion
 
@@ -409,6 +446,8 @@ namespace Player
 
     protected virtual void HandleCrouching()
     {
+      if (!stats.AllowCrouching) return;
+
       if (crouching && onLadder) SetCrouching(false); // use standing collider when on ladder
       else if (crouching != CrouchPressed) SetCrouching(!crouching);
     }
@@ -447,8 +486,6 @@ namespace Player
     private bool doubleJumpUsable;
     private bool bufferedJumpUsable;
     private int frameJumpWasPressed = int.MinValue;
-    private int frameJumpWasReleased = int.MinValue;
-    private bool jumpReleased;
 
     private bool CanUseCoyote => coyoteUsable && !grounded && fixedFrame < frameLeftGrounded + stats.CoyoteFrames;
     private bool HasBufferedJump => bufferedJumpUsable && fixedFrame < frameJumpWasPressed + stats.JumpBufferFrames;
@@ -711,10 +748,18 @@ namespace Player
         var facingDir = Mathf.Sign(wallDirection);
         var grabHeight = transform.position + stats.LedgeGrabPoint.y * Vector3.up;
         var grabPoint = grabHeight + facingDir * stats.LedgeGrabPoint.x * Vector3.right;
-        Gizmos.DrawWireSphere(grabPoint, 0.05f);
-        Gizmos.DrawWireSphere(grabPoint + Vector3.Scale(stats.StandUpOffset, new(facingDir, 1)), 0.05f);
-        Gizmos.DrawRay(grabHeight - stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
-        Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.5f * facingDir * Vector3.right);
+        if (grabbingLedge)
+        {
+          Gizmos.DrawSphere(grabPoint, 0.05f);
+          Gizmos.DrawSphere(grabPoint + Vector3.Scale(stats.StandUpOffset, new(facingDir, 1)), 0.05f);
+        }
+        else
+        {
+          Gizmos.DrawWireSphere(grabPoint, 0.05f);
+          Gizmos.DrawWireSphere(grabPoint + Vector3.Scale(stats.StandUpOffset, new(facingDir, 1)), 0.05f);
+        }
+        Gizmos.DrawRay(grabHeight - stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right);
+        Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right);
       }
     }
   }

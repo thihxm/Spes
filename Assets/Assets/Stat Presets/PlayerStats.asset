@@ -14,15 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxSpeed: 14
   Acceleration: 120
-  GroundDeceleration: 60
+  GroundDeceleration: 30
   AirDeceleration: 30
   GroundingForce: -1.5
+  AllowCrouching: 0
   CrouchInputThreshold: -0.5
   CrouchSpeedPenalty: 0.5
   CrouchSlowdownFrames: 50
   CrouchBufferCheck: 0.1
   AllowDoubleJump: 0
-  JumpPower: 36
+  JumpPower: 32
   MaxFallSpeed: 40
   FallAcceleration: 110
   JumpEndEarlyGravityModifier: 3
@@ -50,8 +51,8 @@ MonoBehaviour:
   LadderClimbThreshold: 0.3
   AllowLedges: 1
   LedgeGrabDeceleration: 4
-  LedgeGrabPoint: {x: 0.33, y: 0.86}
-  StandUpOffset: {x: 0.22, y: 0}
+  LedgeGrabPoint: {x: 0.42, y: 0.92}
+  StandUpOffset: {x: 0.5, y: 0.05}
   LedgeRaycastSpacing: 0.2
   LedgeClimbDuration: 0.5
   AllowDash: 1

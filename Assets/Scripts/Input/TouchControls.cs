@@ -33,7 +33,7 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
                     ""id"": ""f32893f3-d590-459d-aeb0-c0f141b2c744"",
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": ""NormalizeVector2"",
-                    ""interactions"": ""Press(behavior=2)"",
+                    ""interactions"": """",
                     ""initialStateCheck"": false
                 },
                 {

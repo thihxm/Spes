@@ -96,10 +96,18 @@ public class InputManager : Singleton<InputManager>
 
   private FrameInput Gather()
   {
+    if (windAction.IsInProgress())
+    {
+      jumpAction.Disable();
+    }
+    if (windAction.WasReleasedThisFrame())
+    {
+      jumpAction.Enable();
+    }
+
     return new FrameInput
     {
-      JumpDown = jumpAction.WasPressedThisFrame(),
-      JumpUp = jumpAction.WasReleasedThisFrame(),
+      JumpTapped = jumpAction.WasPerformedThisFrame(),
       Move = moveAction.ReadValue<Vector2>(),
       Wind = windAction.ReadValue<Vector2>(),
     };

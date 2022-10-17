@@ -8,8 +8,7 @@ namespace Player
   public struct FrameInput
   {
     public Vector2 Move;
-    public bool JumpDown;
-    public bool JumpUp;
+    public bool JumpTapped;
     public Vector2 Wind;
   }
 
