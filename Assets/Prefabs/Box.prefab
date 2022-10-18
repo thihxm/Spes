@@ -12,11 +12,10 @@ GameObject:
   - component: {fileID: 6126986676833035064}
   - component: {fileID: 4917224517289315028}
   - component: {fileID: 3988320312393899777}
-  - component: {fileID: -6679256579329014911}
-  - component: {fileID: 5247255566179303306}
-  m_Layer: 0
-  m_Name: Bullet
-  m_TagString: Wind
+  - component: {fileID: 19336686}
+  m_Layer: 7
+  m_Name: Box
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -28,9 +27,9 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4130363820123543930}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 1}
+  m_LocalScale: {x: 1.8, y: 1.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -100,7 +99,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 10
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 0
@@ -135,18 +134,7 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1.25, y: 1.25}
   m_EdgeRadius: 0
---- !u!210 &-6679256579329014911
-SortingGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4130363820123543930}
-  m_Enabled: 1
-  m_SortingLayerID: 444919325
-  m_SortingLayer: 4
-  m_SortingOrder: 0
---- !u!114 &5247255566179303306
+--- !u!114 &19336686
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -155,7 +143,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 4130363820123543930}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9c970ca9414c4813b9edc3c678d6ad8, type: 3}
+  m_Script: {fileID: 11500000, guid: fc1c2ef112199492792ed65167123d37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 16

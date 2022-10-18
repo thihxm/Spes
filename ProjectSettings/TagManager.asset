@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Trap
   - TraversablePlatform
+  - Wind
   layers:
   - Default
   - TransparentFX
