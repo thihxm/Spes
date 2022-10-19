@@ -19,41 +19,49 @@ namespace Player
     public void Shoot(int direction)
     {
       body = GetComponent<Rigidbody2D>();
-      
+
       switch (direction)
       {
-        case 0: {
-          body.velocity = transform.right * -1 * speed;
-          break;
-        }
-        case 1: {
-          body.velocity = transform.right * speed;
-          break;
-        }
-        case 2: {
-          body.velocity = transform.up * speed;
-          break;
-        }
-        case 3: {
-          body.velocity = transform.up * -1 * speed;
-          break;
-        }
+        case 0:
+          {
+            body.velocity = transform.right * -1 * speed;
+            break;
+          }
+        case 1:
+          {
+            body.velocity = transform.right * speed;
+            break;
+          }
+        case 2:
+          {
+            body.velocity = transform.up * speed;
+            break;
+          }
+        case 3:
+          {
+            body.velocity = transform.up * -1 * speed;
+            break;
+          }
       }
       timeWhenShot = Time.time;
     }
 
-    void Update() {
-      if (Time.time >= timeWhenShot + shootLength && this != null) {
+    void Update()
+    {
+      if (Time.time >= timeWhenShot + shootLength && this != null)
+      {
         Destroy(gameObject);
       }
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-      if (other.name == "Box") {
-        other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
+      if (other.name == "Box")
+      {
+        // other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
-      if (this != null) {
+      if (this != null)
+      {
         Destroy(gameObject);
       }
     }
