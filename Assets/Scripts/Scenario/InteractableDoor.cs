@@ -10,14 +10,16 @@ namespace Scenario
     private IInteractableObject button;
 
     [SerializeField] private bool IsOpen = false;
-    [SerializeField] private Transform openPosition;
+    [SerializeField] private Transform openPoint;
     private Vector3 closedPosition;
+    private Vector3 openPosition;
     private Vector3 velocity = Vector3.zero;
 
     private void Awake()
     {
       button = buttonObject.GetComponent<IInteractableObject>();
       closedPosition = transform.position;
+      openPosition = openPoint.position;
     }
 
     void FixedUpdate()
@@ -32,9 +34,9 @@ namespace Scenario
         Close();
       }
 
-      if (IsOpen && transform.position.y <= openPosition.position.y)
+      if (IsOpen)
       {
-        transform.position = Vector3.SmoothDamp(transform.position, openPosition.position, ref velocity, 0.5f);
+        transform.position = Vector3.SmoothDamp(transform.position, openPosition, ref velocity, 0.5f);
       }
     }
 

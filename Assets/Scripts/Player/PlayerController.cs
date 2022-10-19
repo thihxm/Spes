@@ -49,6 +49,7 @@ namespace Player
     public bool ClimbingLedge => climbingLedge;
 
     public bool FacingRight => isFacingRight;
+    public bool ShouldFlip => shouldFlip;
 
     public virtual void ApplyVelocity(Vector2 vel, PlayerForce forceType)
     {
@@ -262,6 +263,7 @@ namespace Player
       else
       {
         wallDirection = isFacingRight ? 1 : -1;
+        // wallDirection = 0;
       }
       // wallDirection = wallHitCount > 0 ? (int)Mathf.Sign(wallHits[0].ClosestPoint(transform.position).x - transform.position.x) : 0;
 
@@ -684,7 +686,7 @@ namespace Player
       currentExternalVelocity = Vector2.MoveTowards(currentExternalVelocity, Vector2.zero, stats.ExternalVelocityDecay * Time.fixedDeltaTime);
     }
 
-
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
       if (stats.ShowWallDetection)
@@ -713,5 +715,6 @@ namespace Player
         Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right);
       }
     }
+#endif
   }
 }

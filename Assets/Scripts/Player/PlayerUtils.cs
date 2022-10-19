@@ -34,6 +34,8 @@ namespace Player
     public bool FacingRight { get; }
     public bool ClimbingLedge { get; }
     public void ApplyVelocity(Vector2 vel, PlayerForce forceType);
+    public bool ShouldFlip { get; }
+    public void Flip();
   }
 
   public enum PlayerForce

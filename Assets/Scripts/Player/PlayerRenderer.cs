@@ -25,6 +25,7 @@ namespace Player
 
     private Reanimator reanimator;
     private PlayerController player;
+    private int initialFPS;
 
     // private bool landed;
     // private bool grounded;
