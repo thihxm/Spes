@@ -22,7 +22,7 @@ MonoBehaviour:
   CrouchSpeedPenalty: 0.5
   CrouchSlowdownFrames: 50
   CrouchBufferCheck: 0.1
-  AllowDoubleJump: 0
+  AllowDoubleJump: 1
   JumpPower: 32
   MaxFallSpeed: 40
   FallAcceleration: 110
@@ -41,8 +41,8 @@ MonoBehaviour:
   WallJumpInputLossFrames: 18
   AllowLedges: 1
   LedgeGrabDeceleration: 4
-  LedgeGrabPoint: {x: 0.42, y: 0.92}
-  StandUpOffset: {x: 1, y: 0.25}
+  LedgeGrabPoint: {x: 0.45, y: 0.9}
+  StandUpOffset: {x: 1, y: 0.6}
   LedgeRaycastSpacing: 0.2
   LedgeClimbDuration: 0.5
   VerticalDeadzone: 0.3

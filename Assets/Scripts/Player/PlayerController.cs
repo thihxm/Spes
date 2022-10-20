@@ -247,7 +247,7 @@ namespace Player
 
     private float currentWallJumpMoveMultiplier = 1f; // aka "Horizontal input influence"
     private int wallDirection;
-    private bool isOnWall;
+    [SerializeField] private bool isOnWall;
 
     protected virtual void HandleWalls()
     {
@@ -358,9 +358,8 @@ namespace Player
       grabbingLedge = false;
       SetOnWall(false);
 
-      // DISABLED: The animation is already updating the position, so this is redundant and causes jittering
-      // targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
-      // transform.position = targetPos;
+      targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+      transform.position = targetPos;
       ReturnControl();
     }
 
