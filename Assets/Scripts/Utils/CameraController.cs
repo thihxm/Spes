@@ -1,24 +1,33 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 public class CameraController : MonoBehaviour
 {
+  [SerializeField] private Transform testPoint;
+  [SerializeField] private CinemachineVirtualCamera ccam;
   [SerializeField] private Transform player;
-  [SerializeField] private float cameraSpeed = 0.1f;
+  [SerializeField] private UnityEngine.Camera cam;
+void Start()
+{
+    cam = UnityEngine.Camera.main;
+}
 
-  private Vector3 m_refPos;
-  // Start is called before the first frame update
-  void Start()
+void Update()
   {
-      
+    if (isInCamera(testPoint) && isInCamera(player))
+    {
+        ccam.Follow = testPoint;
+    }
+    else
+    {
+      ccam.Follow = player;
+    }
   }
 
-  // Update is called once per frame
-  void Update()
-  {
-    m_refPos *= Time.smoothDeltaTime;
-    Vector3 newPosition = new Vector3(player.position.x, player.position.y, transform.position.z);
-    transform.position = Vector3.SmoothDamp(transform.position, newPosition, ref m_refPos, cameraSpeed);
-  }
+  bool isInCamera(Transform obj) {
+    Vector3 viewPos = cam.WorldToViewportPoint(obj.position);
+    return (viewPos.x >= 0 && viewPos.x <= 1 && viewPos.y >= 0 && viewPos.y <= 1 && viewPos.z > 0);
+  } 
 }
