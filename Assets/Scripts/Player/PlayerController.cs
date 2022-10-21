@@ -281,7 +281,11 @@ namespace Player
     private void SetOnWall(bool on)
     {
       isOnWall = on;
-      if (on) speed = Vector2.zero;
+      if (on)
+      {
+        speed = Vector2.zero;
+        ResetDash();
+      }
       WallGrabChanged?.Invoke(on);
     }
 
