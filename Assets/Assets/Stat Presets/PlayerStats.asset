@@ -58,6 +58,6 @@ MonoBehaviour:
     m_Bits: 256
   GrounderDistance: 0.1
   WallDetectorSize: {x: 0.85, y: 1.22}
-  ExternalVelocityDecay: 100
+  ExternalVelocityDecay: 0
   ShowWallDetection: 1
   ShowLedgeDetection: 1
