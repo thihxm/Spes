@@ -26,7 +26,7 @@ namespace Player
     private int fixedFrame;
     private bool hasControl = true;
 
-    private PlayerRenderer playerRenderer;
+    // private PlayerRenderer playerRenderer;
 
     #endregion
 
@@ -80,7 +80,7 @@ namespace Player
     {
       rigidBody = GetComponent<Rigidbody2D>();
       inputManager = InputManager.Instance;
-      playerRenderer = PlayerRenderer.Instance;
+      // playerRenderer = PlayerRenderer.Instance;
       colliders = GetComponents<CapsuleCollider2D>();
 
       // Colliders cannot be check whilst disabled. Let's cache its bounds
@@ -96,13 +96,13 @@ namespace Player
     protected virtual void OnEnable()
     {
       inputManager.OnThrowWind += HandleDashInput;
-      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
+      // playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     }
 
     protected virtual void OnDisable()
     {
       inputManager.OnThrowWind -= HandleDashInput;
-      playerRenderer.OnChangeClimbState += UpdateClimbPosition;
+      // playerRenderer.OnChangeClimbState += UpdateClimbPosition;
     }
 
     protected virtual void Update()
