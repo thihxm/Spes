@@ -45,7 +45,7 @@ namespace Player
       // else if (Mathf.Abs(player.Input.x) > 0.1f) spriteRenderer.flipX = player.Input.x < 0;
       if (player.ShouldFlip)
       {
-        player.Flip();
+        flipping = true;
       }
     }
 
@@ -66,6 +66,19 @@ namespace Player
 
       // Tilt with slopes
       transform.up = Vector2.SmoothDamp(transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+
+      // 
+      if (player.Input.x == 0)
+      {
+        shouldWalk = false;
+      }
+    }
+
+    private bool shouldWalk = false;
+
+    private void StartRunningEnd()
+    {
+      shouldWalk = true;
     }
 
     private int stepIndex = 0;
@@ -74,6 +87,14 @@ namespace Player
     {
       // stepIndex = (stepIndex + 1) % footstepClips.Length;
       // PlaySound(footstepClips[stepIndex], 0.01f);
+    }
+
+    private bool flipping;
+
+    public void ChangingDirectionEnd()
+    {
+      flipping = false;
+      player.Flip();
     }
 
     #endregion
@@ -152,9 +173,12 @@ namespace Player
     // [SerializeField] private AudioClip dashClip;
     [SerializeField] private ParticleSystem dashParticles, dashRingParticles;
     [SerializeField] private Transform dashRingTransform;
+    private bool isDashing;
+    private bool endedDash;
 
     private void OnDashingChanged(bool dashing, Vector2 dir)
     {
+      isDashing = dashing;
       if (dashing)
       {
         dashRingTransform.up = dir;
@@ -165,6 +189,7 @@ namespace Player
       else
       {
         dashParticles.Stop();
+        endedDash = true;
       }
     }
 
@@ -259,8 +284,23 @@ namespace Player
         if (player.Crouching) return player.Input.x == 0 || !grounded ? Crouch : Crawl;
         if (landed) return LockState(Land, landAnimDuration);
         if (jumpTriggered) return wallJumped ? Backflip : Jump;
+        if (isDashing) return Dash;
+        if (endedDash) return LockState(EndDash, 0.167f);
 
-        if (grounded) return player.Input.x == 0 ? Idle : Walk;
+        if (grounded)
+        {
+          if (flipping) return ChangingDirection;
+          if (player.Input.x == 0)
+          {
+            return Idle;
+          }
+          else if (!shouldWalk)
+          {
+            return StartRunning;
+          }
+          if (shouldWalk) return Walk;
+        }
+
         if (player.Speed.y > 0) return wallJumped ? Backflip : Jump;
         return dismountedWall ? LockState(WallDismount, 0.167f) : Fall;
         // TODO: determine if WallDismount looks good enough to use. Looks off to me. If it's fine, add clip duration (0.167f) to Stats
@@ -268,6 +308,7 @@ namespace Player
         int LockState(int s, float t)
         {
           lockedTill = Time.time + t;
+          endedDash = false;
           return s;
         }
       }
@@ -288,9 +329,14 @@ namespace Player
     private int currentState;
 
     private static readonly int Idle = Animator.StringToHash("Idle");
+    private static readonly int StartRunning = Animator.StringToHash("StartRunning");
     private static readonly int Walk = Animator.StringToHash("Walk");
+    private static readonly int ChangingDirection = Animator.StringToHash("ChangingDirection");
     private static readonly int Crouch = Animator.StringToHash("Crouch");
     private static readonly int Crawl = Animator.StringToHash("Crawl");
+
+    private static readonly int Dash = Animator.StringToHash("Dash");
+    private static readonly int EndDash = Animator.StringToHash("EndDash");
 
     private static readonly int Jump = Animator.StringToHash("Jump");
     private static readonly int Fall = Animator.StringToHash("Fall");
