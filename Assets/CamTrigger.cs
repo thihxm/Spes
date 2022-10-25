@@ -7,7 +7,6 @@ public class CamTrigger : MonoBehaviour
 {
 
     public CinemachineVirtualCamera cam;
-    public Transform player;
 
     void Start()
     {

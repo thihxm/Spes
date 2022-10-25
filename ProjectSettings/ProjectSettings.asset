@@ -137,6 +137,7 @@ PlayerSettings:
   bundleVersion: 1.0.2
   preloadedAssets:
   - {fileID: 0}
+  - {fileID: 0}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -228,11 +229,11 @@ PlayerSettings:
   iOSRenderExtraFrameOnPause: 0
   iosCopyPluginsCodeInsteadOfSymlink: 0
   appleDeveloperTeamID: 
-  iOSManualSigningProvisioningProfileID: 
+  iOSManualSigningProvisioningProfileID: ac0f07ca-04cd-4e12-a3a4-ebccbdc8939d
   tvOSManualSigningProvisioningProfileID: 
-  iOSManualSigningProvisioningProfileType: 0
+  iOSManualSigningProvisioningProfileType: 1
   tvOSManualSigningProvisioningProfileType: 0
-  appleEnableAutomaticSigning: 0
+  appleEnableAutomaticSigning: 2
   iOSRequireARKit: 0
   iOSAutomaticallyDetectAndAddCapabilities: 1
   appleEnableProMotion: 0
