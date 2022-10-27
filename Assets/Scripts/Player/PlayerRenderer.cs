@@ -209,7 +209,6 @@ namespace Player
 
     private void OnLedgeClimbChanged(bool isLedgeClimbing)
     {
-      Debug.Log("OnLedgeClimbChanged: " + isLedgeClimbing);
       this.isLedgeClimbing = isLedgeClimbing;
       if (!this.isLedgeClimbing) grounded = true;
     }

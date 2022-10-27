@@ -123,7 +123,6 @@ namespace Player
 
     private void HandleDashInput(Vector2 swipeDelta)
     {
-      Debug.Log("HandleDashInput");
       if (!dashing && !grounded)
       {
         dashDirection = CalculateDashDirection(swipeDelta);

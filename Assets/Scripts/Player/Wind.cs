@@ -60,7 +60,7 @@ namespace Player
       {
         // other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
-      if (this != null)
+      if (this != null && !other.CompareTag("WindNoCollision"))
       {
         Destroy(gameObject);
       }

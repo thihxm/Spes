@@ -43,8 +43,6 @@ namespace Player
     {
       if (!grounded) return;
 
-      Debug.Log("ThrowWind");
-
       var windDirection = GetDirection(swipeDelta);
       if (windDirection == Direction.Stationary) return;
 
