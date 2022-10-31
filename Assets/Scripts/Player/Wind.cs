@@ -56,6 +56,10 @@ namespace Player
 
     void OnTriggerEnter2D(Collider2D other)
     {
+      if (other.name == "Box")
+      {
+        other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
+      }
       if (this != null && !other.CompareTag("WindNoCollision"))
       {
         Destroy(gameObject);
