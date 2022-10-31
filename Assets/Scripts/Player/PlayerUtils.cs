@@ -36,6 +36,8 @@ namespace Player
     public void ApplyVelocity(Vector2 vel, PlayerForce forceType);
     public bool ShouldFlip { get; }
     public void Flip();
+
+    public Collider2D BodyCollider { get; }
   }
 
   public enum PlayerForce

@@ -51,6 +51,8 @@ namespace Player
     public bool FacingRight => isFacingRight;
     public bool ShouldFlip => shouldFlip;
 
+    public Collider2D BodyCollider => playerCollider;
+
     public virtual void ApplyVelocity(Vector2 vel, PlayerForce forceType)
     {
       if (forceType == PlayerForce.Burst) speed += vel;
@@ -198,9 +200,17 @@ namespace Player
     private int frameLeftGrounded = int.MinValue;
     private bool grounded;
 
+    private bool isCollisionActive = true;
+
+    public void ToggleCollision() {
+      isCollisionActive = !isCollisionActive;
+    }
+
     protected virtual void CheckCollisions()
     {
       Physics2D.queriesHitTriggers = false;
+
+      if (!isCollisionActive) return;
 
       // Ground and Ceiling
       var origin = (Vector2)transform.position + playerCollider.offset;

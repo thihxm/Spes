@@ -10,21 +10,19 @@ public class PlataformOneWay : MonoBehaviour
   public bool shouldPass = false;
   public bool inputTap = false;
 
-  //Enum that sets up different types for one way platforms
   public enum OneWayPlatforms { GoingUp, GoingDown, Both }
   public OneWayPlatforms type = OneWayPlatforms.Both;
-  //A short delay to allow the player to collide with the platform again
+
   [SerializeField]
   private float delayDown = .4f;
 
   [SerializeField]
   private float delayUp = .4f;
-  //The collider on the platform
+
   private Collider2D col;
-  //Reference of the player
-  private GameObject player;
-  //Reference to the collider on the player
+
   private Collider2D playerCollider;
+  
   private PlayerController playerController;
 
   private bool goingUp = false;
@@ -36,14 +34,11 @@ public class PlataformOneWay : MonoBehaviour
 
   private void Start()
   {
-    //Grabs a reference of the current collider on the platform
     col = GetComponent<Collider2D>();
-    //Less optimal way to find Player
-    player = GameObject.FindGameObjectWithTag("Player");
-    //More optimal way to find Player; requires some sort of script that only the active player in the scene would have
-    // player = FindObjectOfType<Player>().gameObject;
-    playerCollider = player.GetComponent<Collider2D>();
-    playerController = player.GetComponent<PlayerController>();
+    // player = GameObject.FindGameObjectWithTag("Player");
+   // player = FindObjectOfType<Player>().gameObject;
+    playerController = PlayerController.Instance;
+    playerCollider = playerController.BodyCollider;
   }
 
   void OnEnable()
@@ -61,10 +56,17 @@ public class PlataformOneWay : MonoBehaviour
     if (swipeDelta == Vector2.zero) return;
 
     shouldPass = swipeDelta == Vector2.down;
+
+    if (shouldPass) {
+      StartIgnoringCollision(3f);
+      Debug.Log("Desce");
+    } 
   }
 
   private void Update()
   {
+
+
     // Teto
     // if (playerController.isAgainstCeiling && playerController.headObject == col) {
     //     StartIgnoringCollision(delayUp);
@@ -120,7 +122,8 @@ public class PlataformOneWay : MonoBehaviour
   private void StartIgnoringCollision(float delay)
   {
     Physics2D.IgnoreCollision(playerCollider, col, true);
-
+    playerController.ToggleCollision();
+    Debug.Log(col.name + " ignoring collision!");
     StartCoroutine(StopIgnoring(delay));
     // playerController.canLedgeClimb = false;
     // playerController.canGroundCheck = false;
@@ -134,9 +137,9 @@ public class PlataformOneWay : MonoBehaviour
     Debug.Log(col.name + " stopped ignoring collision!");
 
     Physics2D.IgnoreCollision(playerCollider, col, false);
-
+    playerController.ToggleCollision();
     shouldPass = false;
-    goingUp = false;
+    // goingUp = false;
     // playerController.canGroundCheck = true;
     // playerController.canLedgeClimb = true;
     // Debug.Log(col.name + " is checking collision again!");
