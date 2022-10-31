@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Player;
 
 namespace Scenario
 {
@@ -14,6 +15,7 @@ namespace Scenario
     private void Awake()
     {
       boxCollider = GetComponent<Collider2D>();
+      Physics2D.IgnoreCollision(boxCollider, PlayerController.Instance.BodyCollider);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
