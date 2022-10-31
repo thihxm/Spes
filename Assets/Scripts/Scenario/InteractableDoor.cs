@@ -4,46 +4,37 @@ using UnityEngine;
 
 namespace Scenario
 {
-  public class InteractableDoor : MonoBehaviour
+  public class InteractableDoor : MonoBehaviour, IInteractableObject
   {
-    [SerializeField] private GameObject buttonObject;
-    private IInteractableObject button;
-
-    [SerializeField] private bool IsOpen = false;
+    [SerializeField] private bool isOpen = false;
     [SerializeField] private Transform openPoint;
     private Vector3 closedPosition;
     private Vector3 openPosition;
     private Vector3 velocity = Vector3.zero;
 
+    public bool IsActive => isOpen;
+
     private void Awake()
     {
-      button = buttonObject.GetComponent<IInteractableObject>();
       closedPosition = transform.position;
       openPosition = openPoint.position;
     }
 
-    void FixedUpdate()
+    void Update()
     {
-
-      if (button.IsActive && !IsOpen)
-      {
-        IsOpen = true;
-      }
-      else if (!button.IsActive && IsOpen)
-      {
-        Close();
-      }
-
-      if (IsOpen)
+      if (isOpen)
       {
         transform.position = Vector3.SmoothDamp(transform.position, openPosition, ref velocity, 0.5f);
       }
+      else
+      {
+        transform.position = Vector3.SmoothDamp(transform.position, closedPosition, ref velocity, 0.5f);
+      }
     }
 
-    void Close()
+    public void Toggle()
     {
-      IsOpen = false;
-      transform.position = closedPosition;
+      isOpen = !isOpen;
     }
   }
 }

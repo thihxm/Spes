@@ -6,9 +6,9 @@ namespace Scenario
 {
   public class InteractableBox : MonoBehaviour, IInteractableObject
   {
-    public bool IsActive => active;
+    public bool IsActive => isActive;
 
-    private bool active = false;
+    private bool isActive = false;
     private Collider2D boxCollider;
 
     private void Awake()
@@ -20,8 +20,13 @@ namespace Scenario
     {
       if (other.CompareTag("Wind"))
       {
-        active = true;
+        isActive = true;
       }
+    }
+
+    public void Toggle()
+    {
+      isActive = !isActive;
     }
   }
 }
