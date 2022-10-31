@@ -7,5 +7,6 @@ namespace Scenario
   public interface IInteractableObject
   {
     public bool IsActive { get; }
+    public void Toggle();
   }
 }

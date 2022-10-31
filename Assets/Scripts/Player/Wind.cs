@@ -58,7 +58,7 @@ namespace Player
     {
       if (other.name == "Box")
       {
-        // other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
+        other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
       if (this != null && !other.CompareTag("WindNoCollision"))
       {
