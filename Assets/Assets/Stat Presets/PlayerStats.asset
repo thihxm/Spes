@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxSpeed: 14
   Acceleration: 120
-  GroundDeceleration: 30
+  GroundDeceleration: 100
   AirDeceleration: 30
-  GroundingForce: -1.5
-  AllowCrouching: 0
+  GroundingForce: 0
+  AllowCrouching: 1
   CrouchInputThreshold: -0.5
   CrouchSpeedPenalty: 0.5
   CrouchSlowdownFrames: 50
