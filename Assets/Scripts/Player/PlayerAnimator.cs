@@ -258,10 +258,12 @@ namespace Player
     private void HandleAnimations()
     {
       var state = GetState();
-      // Debug.Log("current state: " + currentState + " lockedTill: " + lockedTill);
-      // Debug.Log("new state: " + state);
-      // Debug.Log("State == flipping? " + (state == ChangingDirection));
+      Debug.Log("current state: " + currentState + " lockedTill: " + lockedTill);
+      Debug.Log("new state: " + state);
       ResetFlags();
+      Debug.Log("State == flipping? " + (state == ChangingDirection));
+      Debug.Log("State == current? " + (state == currentState));
+      Debug.Log("State != current? " + (state != currentState));
       if (state == currentState) return;
 
       anim.Play(state, 0); //anim.CrossFade(state, 0, 0);
@@ -317,6 +319,7 @@ namespace Player
         {
           lockedTill = Time.time + t;
           endedDash = false;
+          flipping = false;
           return s;
         }
       }

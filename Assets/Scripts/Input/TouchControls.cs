@@ -60,7 +60,7 @@ public partial class @TouchControls : IInputActionCollection2, IDisposable
                     ""id"": ""d662ee48-b540-4f64-98fd-05665aff89dc"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
-                    ""interactions"": ""Tap"",
+                    ""interactions"": ""Tap,SlowTap"",
                     ""initialStateCheck"": false
                 }
             ],
