@@ -14,6 +14,8 @@ namespace Scenario
 
     public bool IsActive => isOpen;
 
+    [SerializeField] private float closingSmoothTime = 0.5f;
+
     private void Awake()
     {
       closedPosition = transform.position;
@@ -24,11 +26,11 @@ namespace Scenario
     {
       if (isOpen)
       {
-        transform.position = Vector3.SmoothDamp(transform.position, openPosition, ref velocity, 0.5f);
+        transform.position = Vector3.SmoothDamp(transform.position, openPosition, ref velocity, closingSmoothTime);
       }
       else
       {
-        transform.position = Vector3.SmoothDamp(transform.position, closedPosition, ref velocity, 0.5f);
+        transform.position = Vector3.SmoothDamp(transform.position, closedPosition, ref velocity, closingSmoothTime);
       }
     }
 

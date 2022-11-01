@@ -50,10 +50,12 @@ namespace Player
       {
         if (player.FacingRight)
         {
+          Debug.Log("Throwing wind to the left: backPoint");
           Shoot(backPoint, (int)windDirection);
         }
         else
         {
+          Debug.Log("Throwing wind to the left: frontPoint");
           Shoot(frontPoint, (int)windDirection);
         }
       }
@@ -61,10 +63,12 @@ namespace Player
       {
         if (player.FacingRight)
         {
+          Debug.Log("Throwing wind to the right: frontPoint");
           Shoot(frontPoint, (int)windDirection);
         }
         else
         {
+          Debug.Log("Throwing wind to the right: backPoint");
           Shoot(backPoint, (int)windDirection);
         }
       }

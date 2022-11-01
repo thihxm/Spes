@@ -17,7 +17,7 @@ MonoBehaviour:
   GroundDeceleration: 100
   AirDeceleration: 30
   GroundingForce: 0
-  AllowCrouching: 1
+  AllowCrouching: 0
   CrouchInputThreshold: -0.5
   CrouchSpeedPenalty: 0.5
   CrouchSlowdownFrames: 50

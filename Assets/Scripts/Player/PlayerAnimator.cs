@@ -89,10 +89,11 @@ namespace Player
       // PlaySound(footstepClips[stepIndex], 0.01f);
     }
 
-    private bool flipping;
+    [SerializeField] private bool flipping;
 
     public void ChangingDirectionEnd()
     {
+      Debug.Log("ChangingDirectionEnd");
       flipping = false;
       player.Flip();
     }
@@ -257,6 +258,9 @@ namespace Player
     private void HandleAnimations()
     {
       var state = GetState();
+      // Debug.Log("current state: " + currentState + " lockedTill: " + lockedTill);
+      // Debug.Log("new state: " + state);
+      // Debug.Log("State == flipping? " + (state == ChangingDirection));
       ResetFlags();
       if (state == currentState) return;
 
@@ -289,7 +293,11 @@ namespace Player
 
         if (grounded)
         {
-          if (flipping) return ChangingDirection;
+          if (flipping)
+          {
+            Debug.Log("flipping: " + ChangingDirection);
+            return ChangingDirection;
+          }
           if (player.Input.x == 0)
           {
             return Idle;

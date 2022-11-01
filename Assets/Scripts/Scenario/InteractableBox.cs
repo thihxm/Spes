@@ -12,7 +12,7 @@ namespace Scenario
     private bool isActive = false;
     private Collider2D boxCollider;
 
-    private void Awake()
+    private void Start()
     {
       boxCollider = GetComponent<Collider2D>();
       Physics2D.IgnoreCollision(boxCollider, PlayerController.Instance.BodyCollider);

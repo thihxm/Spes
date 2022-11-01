@@ -56,7 +56,7 @@ namespace Player
 
     void OnTriggerEnter2D(Collider2D other)
     {
-      if (other.name == "Box")
+      if (other.CompareTag("Wind"))
       {
         other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
