@@ -39,14 +39,17 @@ namespace Scenario
 
       if (buttonHitCount > 0)
       {
-        if (buttonHits[0] != null && buttonHits[0].gameObject.Equals(keyObject))
+        bool hasKey = false;
+        foreach (var hit in buttonHits)
         {
-          isActive = true;
+          if (hit != null && hit.gameObject.Equals(keyObject))
+          {
+            hasKey = true;
+            break;
+          }
         }
-        else
-        {
-          isActive = false;
-        }
+
+        isActive = hasKey;
       }
       else
       {
