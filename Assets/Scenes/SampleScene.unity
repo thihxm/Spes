@@ -22918,7 +22918,7 @@ GameObject:
   - component: {fileID: 705039979}
   - component: {fileID: 705039978}
   m_Layer: 0
-  m_Name: totem (1)
+  m_Name: Totem Rosa
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -33652,7 +33652,7 @@ GameObject:
   - component: {fileID: 761766204}
   - component: {fileID: 761766203}
   m_Layer: 0
-  m_Name: totem (5)
+  m_Name: Totem Roxo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -34926,7 +34926,7 @@ GameObject:
   - component: {fileID: 801511860}
   - component: {fileID: 801511859}
   m_Layer: 0
-  m_Name: totem (2)
+  m_Name: Totem Azul
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -56039,7 +56039,7 @@ GameObject:
   - component: {fileID: 1407877547}
   - component: {fileID: 1407877546}
   m_Layer: 0
-  m_Name: totem
+  m_Name: Totem Vermelho
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -62635,7 +62635,7 @@ GameObject:
   - component: {fileID: 1987334224}
   - component: {fileID: 1987334223}
   m_Layer: 0
-  m_Name: totem (4)
+  m_Name: Totem Amarelo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63586,7 +63586,7 @@ GameObject:
   - component: {fileID: 2057804257}
   - component: {fileID: 2057804256}
   m_Layer: 0
-  m_Name: totem (3)
+  m_Name: Totem Verde
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
