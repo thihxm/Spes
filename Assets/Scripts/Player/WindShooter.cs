@@ -81,7 +81,7 @@ namespace Player
     void Shoot(Transform point, int direction)
     {
       Wind wind = Instantiate(windPrefab, point.position, point.rotation).GetComponent<Wind>();
-      wind.Shoot(direction);
+      wind.Shoot(direction, player.Speed.x);
     }
 
     private Direction GetDirection(Vector2 windDelta)

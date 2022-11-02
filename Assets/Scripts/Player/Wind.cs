@@ -16,33 +16,36 @@ namespace Player
       // body = GetComponent<Rigidbody2D>();
     }
 
-    public void Shoot(int direction)
+    public void Shoot(int direction, float initialSpeed)
     {
       body = GetComponent<Rigidbody2D>();
+
+      Vector3 windVelocity = new(initialSpeed, 0);
 
       switch (direction)
       {
         case 0:
           {
-            body.velocity = transform.right * -1 * speed;
+            windVelocity += transform.right * -1 * speed;
             break;
           }
         case 1:
           {
-            body.velocity = transform.right * speed;
+            windVelocity += transform.right * speed;
             break;
           }
         case 2:
           {
-            body.velocity = transform.up * speed;
+            windVelocity = transform.up * speed;
             break;
           }
         case 3:
           {
-            body.velocity = transform.up * -1 * speed;
+            windVelocity = transform.up * -1 * speed;
             break;
           }
       }
+      body.velocity = windVelocity;
       timeWhenShot = Time.time;
     }
 
