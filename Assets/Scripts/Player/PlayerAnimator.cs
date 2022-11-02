@@ -258,12 +258,7 @@ namespace Player
     private void HandleAnimations()
     {
       var state = GetState();
-      Debug.Log("current state: " + currentState + " lockedTill: " + lockedTill);
-      Debug.Log("new state: " + state);
       ResetFlags();
-      Debug.Log("State == flipping? " + (state == ChangingDirection));
-      Debug.Log("State == current? " + (state == currentState));
-      Debug.Log("State != current? " + (state != currentState));
       if (state == currentState) return;
 
       anim.Play(state, 0); //anim.CrossFade(state, 0, 0);
@@ -282,7 +277,7 @@ namespace Player
           {
             if (player.Speed.y < 0) return WallSlide;
             if (player.GrabbingLedge) return LedgeGrab; // does this priority order give the right feel/look?
-            if (player.Speed.y > 0) return WallClimb;
+            // if (player.Speed.y > 0) return WallClimb;
             if (player.Speed.y == 0) return WallIdle;
           }
         }
@@ -295,11 +290,7 @@ namespace Player
 
         if (grounded)
         {
-          if (flipping)
-          {
-            Debug.Log("flipping: " + ChangingDirection);
-            return ChangingDirection;
-          }
+          if (flipping) return LockState(ChangingDirection, 0.3f);
           if (player.Input.x == 0)
           {
             return Idle;
