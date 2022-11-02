@@ -278,7 +278,7 @@ namespace Player
             if (player.Speed.y < 0) return WallSlide;
             if (player.GrabbingLedge) return LedgeGrab; // does this priority order give the right feel/look?
             // if (player.Speed.y > 0) return WallClimb;
-            if (player.Speed.y == 0) return WallIdle;
+            // if (player.Speed.y == 0) return WallIdle;
           }
         }
 
