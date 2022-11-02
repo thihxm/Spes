@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.U2D;
 
 namespace Player
 {
@@ -372,8 +373,13 @@ namespace Player
       for (var i = 0; i < hitCount; i++)
       {
         var hit = groundHits[i];
-        if (!hit.collider || hit.collider.isTrigger || !hit.transform.TryGetComponent(out SpriteRenderer r)) continue;
-        var color = r.color;
+
+        if (!hit.collider || hit.collider.isTrigger || !hit.transform.TryGetComponent(out Renderer renderer) || !(renderer is SpriteRenderer || renderer is SpriteShapeRenderer)) continue;
+        Color color;
+        if (renderer is SpriteRenderer spriteRenderer) color = spriteRenderer.color;
+        else color = ((SpriteShapeRenderer)renderer).color;
+
+        Debug.Log($"Setting particle color to {color}");
         currentGradient = new ParticleSystem.MinMaxGradient(color * 0.9f, color * 1.2f);
         SetColor(system);
         return;
