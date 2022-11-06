@@ -19,7 +19,6 @@ public class InputManager : Singleton<InputManager>
 
   private TouchControls touchControls;
 
-  private InputAction tapAction;
   private InputAction moveAction;
   private InputAction windAction;
   private InputAction jumpAction;
@@ -38,7 +37,6 @@ public class InputManager : Singleton<InputManager>
   private void OnEnable()
   {
     touchControls.Enable();
-    tapAction = touchControls.Touch.TouchTap;
     moveAction = touchControls.Touch.Move;
     windAction = touchControls.Touch.Wind;
     jumpAction = touchControls.Touch.Jump;
@@ -52,7 +50,7 @@ public class InputManager : Singleton<InputManager>
 
   private void Start()
   {
-    tapAction.performed += ctx => PerformTap(ctx);
+    jumpAction.performed += ctx => PerformJump(ctx);
     moveAction.performed += ctx => PerformMove(ctx);
     windAction.performed += ctx => PerformWind(ctx);
     windAction.canceled += ctx => PerformWind(ctx);
@@ -64,16 +62,9 @@ public class InputManager : Singleton<InputManager>
     OnMove?.Invoke(joystickDelta);
   }
 
-  private void PerformTap(InputAction.CallbackContext context)
+  private void PerformJump(InputAction.CallbackContext context)
   {
-    PointerInput pointerInput = context.ReadValue<PointerInput>();
-    if (pointerInput.Contact)
-    {
-      if (!IsJoystickTouch(pointerInput.Position))
-      {
-        OnJump?.Invoke();
-      }
-    }
+    OnJump?.Invoke();
   }
 
   private void PerformWind(InputAction.CallbackContext context)

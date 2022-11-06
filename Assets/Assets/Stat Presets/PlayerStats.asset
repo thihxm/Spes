@@ -41,9 +41,9 @@ MonoBehaviour:
   WallJumpInputLossFrames: 18
   AllowLedges: 1
   LedgeGrabDeceleration: 4
-  LedgeGrabPoint: {x: 0.45, y: 0.9}
+  LedgeGrabPoint: {x: 0.45, y: 0.8}
   StandUpOffset: {x: 1, y: 0.6}
-  LedgeRaycastSpacing: 0.2
+  LedgeRaycastSpacing: 0.25
   LedgeClimbDuration: 0.5
   VerticalDeadzone: 0.3
   AllowDash: 1
