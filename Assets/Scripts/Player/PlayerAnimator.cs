@@ -304,7 +304,7 @@ namespace Player
         }
 
         if (player.Speed.y > 0) return wallJumped ? Backflip : Jump;
-        return dismountedWall ? LockState(WallDismount, 0.167f) : Fall;
+        return dismountedWall ? LockState(WallDismount, 0.1f) : Fall;
         // TODO: determine if WallDismount looks good enough to use. Looks off to me. If it's fine, add clip duration (0.167f) to Stats
 
         int LockState(int s, float t)
@@ -379,7 +379,6 @@ namespace Player
         if (renderer is SpriteRenderer spriteRenderer) color = spriteRenderer.color;
         else color = ((SpriteShapeRenderer)renderer).color;
 
-        Debug.Log($"Setting particle color to {color}");
         currentGradient = new ParticleSystem.MinMaxGradient(color * 0.9f, color * 1.2f);
         SetColor(system);
         return;

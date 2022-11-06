@@ -9,12 +9,16 @@ namespace Player
     [SerializeField] private Transform frontPoint;
     [SerializeField] private Transform backPoint;
     [SerializeField] private Transform topPoint;
+    [SerializeField] private Transform windPointsParent;
     [SerializeField] private GameObject windPrefab;
 
     private PlayerController player;
     private bool grounded = false;
 
     private InputManager inputManager;
+
+    [SerializeField] private float tiltChangeSpeed = .05f;
+    private Vector2 tiltVelocity;
 
     void Awake()
     {
@@ -32,6 +36,11 @@ namespace Player
     {
       inputManager.OnThrowWind -= ThrowWind;
       player.GroundedChanged -= OnGroundedChanged;
+    }
+
+    void Update()
+    {
+      HandleGroundEffects();
     }
 
     private void OnGroundedChanged(bool grounded, float impactForce)
@@ -119,6 +128,18 @@ namespace Player
       }
 
       return actionDirection;
+    }
+
+    private void HandleGroundEffects()
+    {
+      // Tilt with slopes
+      windPointsParent.transform.up = Vector2.SmoothDamp(windPointsParent.transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+
+      frontPoint.transform.up = Vector2.SmoothDamp(frontPoint.transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+
+      backPoint.transform.up = Vector2.SmoothDamp(backPoint.transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+
+      topPoint.transform.up = Vector2.SmoothDamp(topPoint.transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
     }
   }
 }
