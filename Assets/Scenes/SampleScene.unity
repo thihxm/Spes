@@ -11003,7 +11003,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 65654393}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 178.888, y: 209.839, z: -10}
+  m_LocalPosition: {x: 306.8, y: 192.5, z: -10}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12315,7 +12315,7 @@ MonoBehaviour:
   - m_Script
   m_LockStageInInspector: 
   m_StreamingVersion: 20170927
-  m_Priority: 1000
+  m_Priority: 10
   m_StandbyUpdate: 2
   m_LookAt: {fileID: 0}
   m_Follow: {fileID: 1188374867}
@@ -15199,7 +15199,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 102.2
+  field of view: 115.45
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -15225,7 +15225,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 189.53003, y: 217.73, z: -10}
+  m_LocalPosition: {x: 306.8, y: 197.25012, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -15313,7 +15313,7 @@ MonoBehaviour:
   m_BlendUpdateMethod: 1
   m_DefaultBlend:
     m_Style: 1
-    m_Time: 2
+    m_Time: 0.75
     m_CustomCurve:
       serializedVersion: 2
       m_Curve: []
@@ -22804,7 +22804,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 648187338}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 178.888, y: 214.839, z: -10}
+  m_LocalPosition: {x: 306.8, y: 197.5, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -35477,7 +35477,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 893532400}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 178.888, y: 209.839, z: 0}
+  m_LocalPosition: {x: 306.8, y: 192.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -55802,7 +55802,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1450982295}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 178.888, y: 214.58913, z: -10}
+  m_LocalPosition: {x: 306.8, y: 197.25012, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -56952,12 +56952,15 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 60.508606, y: -35.144455}
+    - - {x: 59.62906, y: -22.39116}
       - {x: 114.966156, y: -38.195007}
+      - {x: 117.21802, y: -10.987198}
       - {x: 117.928894, y: -2.3980331}
       - {x: -16.18483, y: 18.511574}
-      - {x: -16.373528, y: -28.431011}
-      - {x: 48.879257, y: -34.28239}
+      - {x: -12.415611, y: -15.677715}
+      - {x: 9.512512, y: -12.038109}
+      - {x: 30.108032, y: -10.164391}
+      - {x: 42.28273, y: -24.167706}
 --- !u!1 &1572603934
 GameObject:
   m_ObjectHideFlags: 0
