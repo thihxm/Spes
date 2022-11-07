@@ -8,7 +8,7 @@ namespace Player
   {
     [SerializeField] private float speed = 7f;
     private float timeWhenShot;
-    private float shootLength = 1f;
+    private float shootLength = 0.5f;
     private Rigidbody2D body;
 
     void Start()
@@ -27,6 +27,9 @@ namespace Player
         case 0:
           {
             windVelocity += transform.right * -1 * speed;
+            Vector3 currentScale = transform.localScale;
+            currentScale.x *= -1;
+            transform.localScale = currentScale;
             break;
           }
         case 1:
@@ -37,6 +40,7 @@ namespace Player
         case 2:
           {
             windVelocity = transform.up * speed;
+            transform.Rotate(0, 0, 90);
             break;
           }
         case 3:
@@ -63,7 +67,12 @@ namespace Player
       {
         other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
-      if (this != null && !other.CompareTag("WindNoCollision"))
+
+      if (
+        this != null &&
+        !other.CompareTag("WindNoCollision") &&
+        !other.CompareTag("Player")
+      )
       {
         Destroy(gameObject);
       }
