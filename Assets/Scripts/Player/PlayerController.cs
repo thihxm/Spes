@@ -375,8 +375,7 @@ namespace Player
       targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
       while (Physics2D.OverlapBox(targetPos, playerCollider.bounds.size, 0f, stats.ClimbableLayer))
       {
-        Debug.Log($"targetPos Overlapped Ground: {targetPos}");
-        targetPos.y += 1f;
+        targetPos.y += 0.5f;
       }
       transform.position = targetPos;
       ReturnControl();
