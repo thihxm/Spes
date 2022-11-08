@@ -119,7 +119,8 @@ namespace Player
     public float DashEndHorizontalMultiplier = 0.25f;
 
     [Tooltip("Dash input diagonal threshold")]
-    public float DashDiagonalThreshold = 0.35f;
+    public float DiagonalDashMinAngle = 15f;
+    public float DiagonalDashMaxAngle = 75f;
 
     [Header("ATTACKS")]
     [Tooltip("All the player to attack")]

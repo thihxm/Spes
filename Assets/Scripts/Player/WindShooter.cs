@@ -12,6 +12,10 @@ namespace Player
     [SerializeField] private Transform windPointsParent;
     [SerializeField] private GameObject windPrefab;
 
+    [SerializeField] private ParticleSystem windRingParticles;
+    [SerializeField] private ParticleSystem windSmallRingParticles;
+    [SerializeField] private Transform windRingTransform;
+
     private PlayerController player;
     private bool grounded = false;
 
@@ -53,73 +57,83 @@ namespace Player
       if (!grounded) return;
 
       var windDirection = GetDirection(swipeDelta);
-      if (windDirection == Direction.Stationary) return;
 
-      if (windDirection == Direction.Left)
+      if (windDirection == Vector2.zero || windDirection == Vector2.down) return;
+
+      windRingTransform.up = windDirection;
+      windRingParticles.Play();
+      windSmallRingParticles.Play();
+
+      if (windDirection == Vector2.left)
       {
         if (player.FacingRight)
         {
-          Shoot(backPoint, (int)windDirection);
+          windRingTransform.position = backPoint.position;
+          Shoot(backPoint, windDirection);
         }
         else
         {
-          Shoot(frontPoint, (int)windDirection);
+          windRingTransform.position = frontPoint.position;
+          Shoot(frontPoint, windDirection);
         }
       }
-      else if (windDirection == Direction.Right)
+      else if (windDirection == Vector2.right)
       {
         if (player.FacingRight)
         {
-          Shoot(frontPoint, (int)windDirection);
+          windRingTransform.position = frontPoint.position;
+          Shoot(frontPoint, windDirection);
         }
         else
         {
-          Shoot(backPoint, (int)windDirection);
+          windRingTransform.position = backPoint.position;
+          Shoot(backPoint, windDirection);
         }
       }
-      else if (windDirection == Direction.Up)
+      else if (windDirection == Vector2.up)
       {
-        Shoot(topPoint, (int)windDirection);
+        windRingTransform.position = topPoint.position;
+        Shoot(topPoint, windDirection);
       }
     }
 
-    void Shoot(Transform point, int direction)
+    void Shoot(Transform origin, Vector2 direction)
     {
-      Wind wind = Instantiate(windPrefab, point.position, point.rotation).GetComponent<Wind>();
+      Wind wind = Instantiate(windPrefab, origin.position, origin.rotation).GetComponent<Wind>();
       wind.Shoot(direction, player.Speed.x);
     }
 
-    private Direction GetDirection(Vector2 windDelta)
+    private Vector2 GetDirection(Vector2 windDelta)
     {
       float x = windDelta.x;
       float y = windDelta.y;
-      Direction actionDirection;
+      Vector2 actionDirection;
 
       if (x == 0 && y == 0)
       {
-        return Direction.Stationary;
+        return Vector2.zero;
       }
 
       if (Mathf.Abs(y) > Mathf.Abs(x))
       {
         if (y > 0)
         {
-          actionDirection = Direction.Up;
+          actionDirection = Vector2.up;
         }
         else
         {
-          actionDirection = Direction.Down;
+          actionDirection = Vector2.down;
         }
       }
       else
       {
         if (x > 0)
         {
-          actionDirection = Direction.Right;
+          actionDirection = Vector2.right;
         }
         else
         {
-          actionDirection = Direction.Left;
+          actionDirection = Vector2.left;
         }
       }
 

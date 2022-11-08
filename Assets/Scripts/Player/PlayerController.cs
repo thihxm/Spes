@@ -137,7 +137,9 @@ namespace Player
     {
       Vector2 calculatedDirection = Vector2.zero;
 
-      if (Mathf.Abs(swipeDelta.x) >= stats.DashDiagonalThreshold && Mathf.Abs(swipeDelta.y) >= stats.DashDiagonalThreshold)
+      var angle = (180 / Math.PI) * Mathf.Atan2(Mathf.Abs(swipeDelta.x), Mathf.Abs(swipeDelta.y));
+
+      if (angle >= stats.DiagonalDashMinAngle && angle <= stats.DiagonalDashMaxAngle)
       {
         float xVelocity = (swipeDelta.x > 0 ? 1 : -1);
         float yVelocity = (swipeDelta.y > 0 ? 1 : -1);
