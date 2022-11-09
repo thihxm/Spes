@@ -311,7 +311,7 @@ namespace Player
         {
           lockedTill = Time.time + t;
           endedDash = false;
-          flipping = false;
+          // flipping = false;
           return s;
         }
       }
@@ -321,7 +321,15 @@ namespace Player
         jumpTriggered = false;
         landed = false;
         hitWall = false;
+        if (dismountedWall)
+        {
+          player.Flip();
+        }
         dismountedWall = false;
+        if (flipping)
+        {
+          ChangingDirectionEnd();
+        }
       }
     }
 

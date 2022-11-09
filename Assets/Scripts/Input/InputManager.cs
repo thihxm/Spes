@@ -34,11 +34,11 @@ public class InputManager : Singleton<InputManager>
   {
     Debug.Log("InputManager Awake");
     EnhancedTouchSupport.Enable();
-    touchControls = new TouchControls();
   }
 
   private void OnEnable()
   {
+    touchControls = new TouchControls();
     touchControls.Enable();
     moveAction = touchControls.Touch.Move;
     windAction = touchControls.Touch.Wind;

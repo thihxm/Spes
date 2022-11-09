@@ -261,6 +261,8 @@ namespace Player
     private int wallDirection;
     [SerializeField] private bool isOnWall;
 
+    private bool IsPlayerFacingWall => wallDirection == (isFacingRight ? 1 : -1);
+
     protected virtual void HandleWalls()
     {
       if (!stats.AllowWalls) return;
@@ -613,8 +615,11 @@ namespace Player
         else
         {
           // Prevent useless horizontal speed buildup when against a wall
-          if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x))
+          if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x) && IsPlayerFacingWall)
+          {
+            Debug.Log("Prevented useless speed buildup");
             speed.x = 0;
+          }
 
           var inputX = frameInput.Move.x;
           speed.x = Mathf.MoveTowards(speed.x, inputX * stats.MaxSpeed, currentWallJumpMoveMultiplier * stats.Acceleration * Time.fixedDeltaTime);

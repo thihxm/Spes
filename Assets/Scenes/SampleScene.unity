@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 19583570}
   - component: {fileID: 19583569}
   - component: {fileID: 19583568}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Left Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5289,7 +5289,7 @@ GameObject:
   - component: {fileID: 35202278}
   - component: {fileID: 35202277}
   - component: {fileID: 35202280}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10422,7 +10422,7 @@ GameObject:
   - component: {fileID: 40506814}
   - component: {fileID: 40506813}
   - component: {fileID: 40506812}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape (33)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10442,7 +10442,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 11
+  m_RootOrder: 15
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!60 &40506812
 PolygonCollider2D:
@@ -11538,7 +11538,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 1
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &107828039
 GameObject:
@@ -11796,7 +11796,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 7
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &117143009
 GameObject:
@@ -18008,7 +18008,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 209625644}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: OpenPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -18497,7 +18497,7 @@ GameObject:
   - component: {fileID: 287345016}
   - component: {fileID: 287345015}
   - component: {fileID: 287345014}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: w (6)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -18670,7 +18670,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &296030408
 Transform:
   m_ObjectHideFlags: 0
@@ -19356,7 +19356,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 4
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &361772068
 GameObject:
@@ -19950,7 +19950,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 6
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &468520397
 GameObject:
@@ -27370,7 +27370,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 583991696}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: OpenPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27960,7 +27960,7 @@ GameObject:
   - component: {fileID: 700587168}
   - component: {fileID: 700587167}
   - component: {fileID: 700587166}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Blue Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39192,7 +39192,7 @@ GameObject:
   - component: {fileID: 775706270}
   - component: {fileID: 775706269}
   - component: {fileID: 775706268}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape (18)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39212,7 +39212,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 9
+  m_RootOrder: 13
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!60 &775706268
 PolygonCollider2D:
@@ -39695,7 +39695,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 799497418}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: OpenPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45306,6 +45306,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   stats: {fileID: 11400000, guid: e89cbdee6d8784999b3c8eff5a00d762, type: 2}
+  wallHitCount: 0
   isOnWall: 0
   isFacingRight: 1
   shouldFlip: 0
@@ -52748,7 +52749,7 @@ GameObject:
   - component: {fileID: 1118345839}
   - component: {fileID: 1118345838}
   - component: {fileID: 1118345837}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Bottom Bridge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52768,7 +52769,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 12
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!68 &1118345837
 EdgeCollider2D:
@@ -53303,7 +53304,7 @@ GameObject:
   - component: {fileID: 1173210608}
   - component: {fileID: 1173210607}
   - component: {fileID: 1173210606}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Blue Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -53323,7 +53324,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 13
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!68 &1173210606
 EdgeCollider2D:
@@ -59105,7 +59106,7 @@ GameObject:
   - component: {fileID: 1347270541}
   - component: {fileID: 1347270540}
   - component: {fileID: 1347270539}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Right Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59254,7 +59255,7 @@ GameObject:
   - component: {fileID: 1356819617}
   - component: {fileID: 1356819616}
   - component: {fileID: 1356819615}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59274,7 +59275,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 8
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!60 &1356819615
 PolygonCollider2D:
@@ -59497,7 +59498,7 @@ GameObject:
   - component: {fileID: 1398935207}
   - component: {fileID: 1398935206}
   - component: {fileID: 1398935205}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -64967,7 +64968,7 @@ GameObject:
   - component: {fileID: 1404377973}
   - component: {fileID: 1404377972}
   - component: {fileID: 1404377971}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: w (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67342,7 +67343,7 @@ GameObject:
   - component: {fileID: 1746747205}
   - component: {fileID: 1746747204}
   - component: {fileID: 1746747203}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Top Bridge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67517,7 +67518,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 14
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1777948024
 GameObject:
@@ -67711,7 +67712,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 5
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1787087356
 GameObject:
@@ -67757,7 +67758,7 @@ GameObject:
   - component: {fileID: 1816051939}
   - component: {fileID: 1816051938}
   - component: {fileID: 1816051937}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -68345,7 +68346,7 @@ GameObject:
   - component: {fileID: 1835555462}
   - component: {fileID: 1835555461}
   - component: {fileID: 1835555460}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Closed Sprite Shape (19)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -68365,7 +68366,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 10
+  m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!60 &1835555460
 PolygonCollider2D:
@@ -69718,7 +69719,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 3
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894647296
 GameObject:
@@ -70013,7 +70014,7 @@ GameObject:
   - component: {fileID: 1904430369}
   - component: {fileID: 1904430368}
   - component: {fileID: 1904430367}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Middle Bridge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -70190,7 +70191,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 15
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1922970352
 GameObject:
@@ -75171,6 +75172,10 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 761766202}
+  - {fileID: 1118345836}
+  - {fileID: 1173210605}
+  - {fileID: 1746747206}
+  - {fileID: 1904430370}
   - {fileID: 85786683}
   - {fileID: 1981086217}
   - {fileID: 1870005514}
@@ -75182,10 +75187,6 @@ Transform:
   - {fileID: 775706267}
   - {fileID: 1835555459}
   - {fileID: 40506811}
-  - {fileID: 1118345836}
-  - {fileID: 1173210605}
-  - {fileID: 1746747206}
-  - {fileID: 1904430370}
   - {fileID: 35202279}
   m_Father: {fileID: 1244963634}
   m_RootOrder: 3
@@ -75449,7 +75450,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1953865433}
-  m_RootOrder: 2
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1987334221
 GameObject:
