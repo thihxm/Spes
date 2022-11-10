@@ -7,6 +7,7 @@ public class CamTrigger : MonoBehaviour
 {
 
     public CinemachineVirtualCamera cam;
+    public bool focus = false;
 
     void Start()
     {
@@ -25,6 +26,7 @@ public class CamTrigger : MonoBehaviour
         if (col.gameObject.tag == "Player") {
             Debug.Log("ZoomIn");
             cam.Priority = 50;
+            focus = true;
         }      
     }
 
@@ -34,6 +36,7 @@ public class CamTrigger : MonoBehaviour
         if (col.gameObject.tag == "Player") {
             Debug.Log("ZoomOut");
             cam.Priority = -50;
+            focus = false;
         }     
     }
 }
