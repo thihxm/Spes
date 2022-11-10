@@ -8,7 +8,7 @@ namespace Player
   {
     [SerializeField] private float speed = 7f;
     private float timeWhenShot;
-    private float shootLength = 1f;
+    private float shootLength = 0.5f;
     private Rigidbody2D body;
 
     void Start()
@@ -16,35 +16,33 @@ namespace Player
       // body = GetComponent<Rigidbody2D>();
     }
 
-    public void Shoot(int direction, float initialSpeed)
+    public void Shoot(Vector2 direction, float initialSpeed)
     {
       body = GetComponent<Rigidbody2D>();
 
       Vector3 windVelocity = new(initialSpeed, 0);
 
-      switch (direction)
+      if (direction == Vector2.left)
       {
-        case 0:
-          {
-            windVelocity += transform.right * -1 * speed;
-            break;
-          }
-        case 1:
-          {
-            windVelocity += transform.right * speed;
-            break;
-          }
-        case 2:
-          {
-            windVelocity = transform.up * speed;
-            break;
-          }
-        case 3:
-          {
-            windVelocity = transform.up * -1 * speed;
-            break;
-          }
+        windVelocity += transform.right * -1 * speed;
+        Vector3 currentScale = transform.localScale;
+        currentScale.x *= -1;
+        transform.localScale = currentScale;
       }
+      else if (direction == Vector2.right)
+      {
+        windVelocity += transform.right * speed;
+      }
+      else if (direction == Vector2.up)
+      {
+        windVelocity = transform.up * speed;
+        transform.Rotate(0, 0, 90);
+      }
+      else if (direction == Vector2.down)
+      {
+        windVelocity = transform.up * -1 * speed;
+      }
+
       body.velocity = windVelocity;
       timeWhenShot = Time.time;
     }
@@ -63,7 +61,12 @@ namespace Player
       {
         other.attachedRigidbody.AddForce(body.velocity, ForceMode2D.Impulse);
       }
-      if (this != null && !other.CompareTag("WindNoCollision"))
+
+      if (
+        this != null &&
+        !other.CompareTag("WindNoCollision") &&
+        !other.CompareTag("Player")
+      )
       {
         Destroy(gameObject);
       }

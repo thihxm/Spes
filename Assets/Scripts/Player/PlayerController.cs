@@ -137,7 +137,9 @@ namespace Player
     {
       Vector2 calculatedDirection = Vector2.zero;
 
-      if (Mathf.Abs(swipeDelta.x) >= stats.DashDiagonalThreshold && Mathf.Abs(swipeDelta.y) >= stats.DashDiagonalThreshold)
+      var angle = (180 / Math.PI) * Mathf.Atan2(Mathf.Abs(swipeDelta.x), Mathf.Abs(swipeDelta.y));
+
+      if (angle >= stats.DiagonalDashMinAngle && angle <= stats.DiagonalDashMaxAngle)
       {
         float xVelocity = (swipeDelta.x > 0 ? 1 : -1);
         float yVelocity = (swipeDelta.y > 0 ? 1 : -1);
@@ -259,6 +261,8 @@ namespace Player
     private int wallDirection;
     [SerializeField] private bool isOnWall;
 
+    private bool IsPlayerFacingWall => wallDirection == (isFacingRight ? 1 : -1);
+
     protected virtual void HandleWalls()
     {
       if (!stats.AllowWalls) return;
@@ -375,8 +379,7 @@ namespace Player
       targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
       while (Physics2D.OverlapBox(targetPos, playerCollider.bounds.size, 0f, stats.ClimbableLayer))
       {
-        Debug.Log($"targetPos Overlapped Ground: {targetPos}");
-        targetPos += Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+        targetPos.y += 0.5f;
       }
       transform.position = targetPos;
       ReturnControl();
@@ -612,8 +615,11 @@ namespace Player
         else
         {
           // Prevent useless horizontal speed buildup when against a wall
-          if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x))
+          if (wallHitCount > 0 && Mathf.Approximately(rigidBody.velocity.x, 0) && Mathf.Sign(frameInput.Move.x) == Mathf.Sign(speed.x) && IsPlayerFacingWall)
+          {
+            Debug.Log("Prevented useless speed buildup");
             speed.x = 0;
+          }
 
           var inputX = frameInput.Move.x;
           speed.x = Mathf.MoveTowards(speed.x, inputX * stats.MaxSpeed, currentWallJumpMoveMultiplier * stats.Acceleration * Time.fixedDeltaTime);

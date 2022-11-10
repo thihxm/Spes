@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using Player;
+using Input;
 
 [DefaultExecutionOrder(-100)]
 public class InputManager : Singleton<InputManager>
@@ -27,15 +28,17 @@ public class InputManager : Singleton<InputManager>
 
   public FrameInput FrameInput { get; private set; }
 
+  public JoystickTouchInput JoystickTouchInput { get; private set; }
+
   private void Awake()
   {
     Debug.Log("InputManager Awake");
     EnhancedTouchSupport.Enable();
-    touchControls = new TouchControls();
   }
 
   private void OnEnable()
   {
+    touchControls = new TouchControls();
     touchControls.Enable();
     moveAction = touchControls.Touch.Move;
     windAction = touchControls.Touch.Wind;
@@ -83,7 +86,11 @@ public class InputManager : Singleton<InputManager>
     }
   }
 
-  private void Update() => FrameInput = Gather();
+  private void Update()
+  {
+    FrameInput = Gather();
+    JoystickTouchInput = GatherMoveJoystickTouchInput();
+  }
 
   private FrameInput Gather()
   {
@@ -101,6 +108,25 @@ public class InputManager : Singleton<InputManager>
       JumpTapped = jumpAction.WasPerformedThisFrame(),
       Move = moveAction.ReadValue<Vector2>(),
       Wind = windAction.ReadValue<Vector2>(),
+    };
+  }
+
+  private JoystickTouchInput GatherMoveJoystickTouchInput()
+  {
+    if (windAction.WasPerformedThisFrame() && jumpAction.enabled)
+    {
+      jumpAction.Disable();
+    }
+    if (windAction.WasReleasedThisFrame())
+    {
+      jumpAction.Enable();
+    }
+
+    return new JoystickTouchInput
+    {
+      TouchPosition = touchControls.Touch.TouchTap.ReadValue<PointerInput>().Position,
+      TouchStarted = jumpAction.WasPressedThisFrame(),
+      TouchEnded = jumpAction.WasReleasedThisFrame(),
     };
   }
 

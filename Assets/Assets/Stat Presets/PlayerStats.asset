@@ -33,7 +33,7 @@ MonoBehaviour:
   ClimbableLayer:
     serializedVersion: 2
     m_Bits: 128
-  RequireInputPush: 0
+  RequireInputPush: 1
   WallClimbSpeed: 5
   WallFallAcceleration: 8
   MaxWallFallSpeed: 15
@@ -50,7 +50,8 @@ MonoBehaviour:
   DashVelocity: 50
   DashDurationFrames: 8
   DashEndHorizontalMultiplier: 0.25
-  DashDiagonalThreshold: 0.35
+  DiagonalDashMinAngle: 15
+  DiagonalDashMaxAngle: 75
   AllowAttacks: 0
   AttackFrameCooldown: 15
   PlayerLayer:
