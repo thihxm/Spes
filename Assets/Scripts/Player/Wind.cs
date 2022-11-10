@@ -7,9 +7,10 @@ namespace Player
   public class Wind : MonoBehaviour
   {
     [SerializeField] private float speed = 7f;
+    [SerializeField] private Transform trail;
     private float timeWhenShot;
     private float shootLength = 0.5f;
-    private Rigidbody2D body;
+    [SerializeField] private Rigidbody2D body;
 
     void Start()
     {
@@ -18,8 +19,6 @@ namespace Player
 
     public void Shoot(Vector2 direction, float initialSpeed)
     {
-      body = GetComponent<Rigidbody2D>();
-
       Vector3 windVelocity = new(initialSpeed, 0);
 
       if (direction == Vector2.left)
@@ -44,6 +43,7 @@ namespace Player
       }
 
       body.velocity = windVelocity;
+      trail.transform.up = direction;
       timeWhenShot = Time.time;
     }
 
