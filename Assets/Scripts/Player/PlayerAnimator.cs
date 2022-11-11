@@ -175,7 +175,7 @@ namespace Player
     // [SerializeField] private AudioClip dashClip;
     [SerializeField] private ParticleSystem dashParticles, dashRingParticles;
     [SerializeField] private Transform dashRingTransform;
-    private bool isDashing;
+    [SerializeField] private bool isDashing;
     private bool endedDash;
 
     private void OnDashingChanged(bool dashing, Vector2 dir)
@@ -287,7 +287,7 @@ namespace Player
         if (landed) return LockState(Land, landAnimDuration);
         if (jumpTriggered) return wallJumped ? Backflip : Jump;
         if (isDashing) return Dash;
-        if (endedDash) return LockState(EndDash, 0.167f);
+        if (endedDash && !grounded) return LockState(EndDash, 0.1f);
 
         if (grounded)
         {

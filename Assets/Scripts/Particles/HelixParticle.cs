@@ -23,8 +23,8 @@ namespace Particles
       var velocityOverLifetime = ps.velocityOverLifetime;
       velocityOverLifetime.enabled = true;
       velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
-
-      ps.startSpeed = 0f;
+      var particleMain = ps.main;
+      particleMain.startSpeed = 0f;
 
       AnimationCurve curveX = new AnimationCurve(); // Create a new curve
       for (int i = 0; i < resolution; i++)

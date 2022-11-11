@@ -1,5 +1,5 @@
 {
-  "omnisharp.useModernNet": true,
+  "omnisharp.useModernNet": false,
   "files.exclude": {
     "**/.DS_Store": true,
     "**/.git": true,

@@ -200,7 +200,7 @@ namespace Player
     private int ceilingHitCount;
     private int wallHitCount;
     private int frameLeftGrounded = int.MinValue;
-    private bool grounded;
+    [SerializeField] private bool grounded;
 
     private bool isCollisionActive = true;
 
@@ -239,6 +239,7 @@ namespace Player
       // Landed on the Ground
       if (!grounded && groundHitCount > 0)
       {
+        Debug.Log("Landed on the Ground");
         grounded = true;
         ResetDash();
         ResetJump();
@@ -287,7 +288,10 @@ namespace Player
       bool ShouldStickToWall()
       {
         if (wallHitCount <= 0 || grounded) return false;
-        if (stats.RequireInputPush) return Mathf.Sign(frameInput.Move.x) == wallDirection;
+        if (stats.RequireInputPush)
+        {
+          return frameInput.Move.x != 0 && Mathf.Sign(frameInput.Move.x) == wallDirection;
+        }
         return true;
       }
     }
@@ -526,7 +530,7 @@ namespace Player
     private bool dashToConsume;
     private bool canDash;
     private Vector2 dashVel;
-    private bool dashing;
+    [SerializeField] private bool dashing;
     private int startedDashing;
     private Vector2 dashDirection = Vector2.zero;
 
@@ -570,6 +574,11 @@ namespace Player
 
     protected virtual void ResetDash()
     {
+      canDash = true;
+      dashing = false;
+      DashingChanged?.Invoke(false, Vector2.zero);
+      if (speed.y > 0) speed.y = 0;
+      speed.x *= stats.DashEndHorizontalMultiplier;
       canDash = true;
     }
 
