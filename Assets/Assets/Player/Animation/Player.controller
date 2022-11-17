@@ -419,7 +419,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Walk 0
+  m_Name: AirBending
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -432,7 +432,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 2dbef43f8e40e49c5af2fdaa9503d7c7, type: 2}
+  m_Motion: {fileID: 7400000, guid: 6e0de21200a3b49b694e2f18b6819f96, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -593,7 +593,7 @@ AnimatorStateMachine:
     m_Position: {x: 470, y: -410, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 3034891403729745002}
-    m_Position: {x: 0, y: 0, z: 0}
+    m_Position: {x: 470, y: -460, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []

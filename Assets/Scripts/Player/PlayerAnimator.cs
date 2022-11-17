@@ -343,7 +343,7 @@ namespace Player
     private static readonly int LedgeGrab = Animator.StringToHash("LedgeGrab");
     private static readonly int LedgeClimb = Animator.StringToHash("LedgeClimb");
 
-    private static readonly int Attack = Animator.StringToHash("Attack");
+    private static readonly int AirBending = Animator.StringToHash("AirBending");
     #endregion
 
     #endregion

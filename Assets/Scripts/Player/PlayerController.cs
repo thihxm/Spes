@@ -133,6 +133,10 @@ namespace Player
       if (!dashing && !grounded)
       {
         dashDirection = CalculateDashDirection(swipeDelta);
+        if (dashDirection.x > 0 && !isFacingRight || dashDirection.x < 0 && isFacingRight)
+        {
+          Flip();
+        }
 
         dashToConsume = true;
       }
