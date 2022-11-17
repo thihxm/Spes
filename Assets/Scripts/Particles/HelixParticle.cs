@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Particles
 {
+  [RequireComponent(typeof(ParticleSystem))]
   public class HelixParticle : MonoBehaviour
   {
     private ParticleSystem ps;

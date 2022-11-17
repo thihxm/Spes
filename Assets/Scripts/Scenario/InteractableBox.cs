@@ -5,6 +5,7 @@ using Player;
 
 namespace Scenario
 {
+  [RequireComponent(typeof(Collider2D))]
   public class InteractableBox : MonoBehaviour, IInteractableObject
   {
     public bool IsActive => isActive;

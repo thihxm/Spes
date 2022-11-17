@@ -35,7 +35,7 @@ AnimationClip:
   m_ClipBindingConstant:
     genericBindings:
     - serializedVersion: 2
-      path: 0
+      path: 312131828
       attribute: 0
       script: {fileID: 0}
       typeID: 212

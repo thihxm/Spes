@@ -4,7 +4,7 @@ using UnityEngine.U2D;
 
 namespace Player
 {
-  [RequireComponent(typeof(Animator), typeof(SpriteRenderer))]
+  [RequireComponent(typeof(SpriteRenderer))]
   public class PlayerAnimator : MonoBehaviour
   {
     private IPlayerController player;
@@ -15,7 +15,7 @@ namespace Player
     private void Awake()
     {
       player = GetComponentInParent<IPlayerController>();
-      anim = GetComponent<Animator>();
+      anim = GetComponentInParent<Animator>();
       spriteRenderer = GetComponent<SpriteRenderer>();
       // source = GetComponent<AudioSource>();
     }
@@ -32,22 +32,10 @@ namespace Player
 
     private void Update()
     {
-      HandleSpriteFlipping();
       HandleGroundEffects();
       HandleWallSlideEffects();
       SetParticleColor(Vector2.down, moveParticles);
       HandleAnimations();
-    }
-
-    private void HandleSpriteFlipping()
-    {
-      if (player.ClimbingLedge) return;
-      // if (player.WallDirection != 0) spriteRenderer.flipX = player.WallDirection == -1;
-      // else if (Mathf.Abs(player.Input.x) > 0.1f) spriteRenderer.flipX = player.Input.x < 0;
-      if (player.ShouldFlip)
-      {
-        flipping = true;
-      }
     }
 
     #region Ground Movement
@@ -71,15 +59,8 @@ namespace Player
       // 
       if (player.Input.x == 0)
       {
-        shouldWalk = false;
+        player.Running = false;
       }
-    }
-
-    private bool shouldWalk = false;
-
-    private void StartRunningEnd()
-    {
-      shouldWalk = true;
     }
 
     private int stepIndex = 0;
@@ -90,12 +71,14 @@ namespace Player
       // PlaySound(footstepClips[stepIndex], 0.01f);
     }
 
-    [SerializeField] private bool flipping;
-
-    public void ChangingDirectionEnd()
+    private void StartRunningEnd()
     {
-      Debug.Log("ChangingDirectionEnd");
-      flipping = false;
+      player.Running = true;
+    }
+
+    private void Flip()
+    {
+      Debug.Log("Flip ended");
       player.Flip();
     }
 
@@ -176,7 +159,6 @@ namespace Player
     [SerializeField] private ParticleSystem dashParticles, dashRingParticles;
     [SerializeField] private Transform dashRingTransform;
     [SerializeField] private bool isDashing;
-    private bool endedDash;
 
     private void OnDashingChanged(bool dashing, Vector2 dir)
     {
@@ -191,7 +173,6 @@ namespace Player
       else
       {
         dashParticles.Stop();
-        endedDash = true;
       }
     }
 
@@ -287,20 +268,23 @@ namespace Player
         if (landed) return LockState(Land, landAnimDuration);
         if (jumpTriggered) return wallJumped ? Backflip : Jump;
         if (isDashing) return Dash;
-        if (endedDash && !grounded) return LockState(EndDash, 0.1f);
 
         if (grounded)
         {
-          if (flipping) return LockState(ChangingDirection, 0.3f);
+          if (player.ShouldFlip)
+          {
+            return ChangingDirection;
+          }
+
           if (player.Input.x == 0)
           {
             return Idle;
           }
-          else if (!shouldWalk)
+          else if (!player.Running)
           {
             return StartRunning;
           }
-          if (shouldWalk) return Walk;
+          if (player.Running) return Walk;
         }
 
         if (player.Speed.y > 0) return wallJumped ? Backflip : Jump;
@@ -310,8 +294,6 @@ namespace Player
         int LockState(int s, float t)
         {
           lockedTill = Time.time + t;
-          endedDash = false;
-          // flipping = false;
           return s;
         }
       }
@@ -323,13 +305,9 @@ namespace Player
         hitWall = false;
         if (dismountedWall)
         {
-          player.Flip();
+          Flip();
         }
         dismountedWall = false;
-        if (flipping)
-        {
-          ChangingDirectionEnd();
-        }
       }
     }
 
@@ -347,7 +325,6 @@ namespace Player
     private static readonly int Crawl = Animator.StringToHash("Crawl");
 
     private static readonly int Dash = Animator.StringToHash("Dash");
-    private static readonly int EndDash = Animator.StringToHash("EndDash");
 
     private static readonly int Jump = Animator.StringToHash("Jump");
     private static readonly int Fall = Animator.StringToHash("Fall");

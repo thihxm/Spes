@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 
 namespace Player
 {
+  [RequireComponent(typeof(Rigidbody2D), typeof(PlayerController))]
   public class PlayerLife : MonoBehaviour
   {
     private Rigidbody2D body;

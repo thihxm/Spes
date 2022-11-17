@@ -50,6 +50,11 @@ namespace Player
 
     public bool FacingRight => isFacingRight;
     public bool ShouldFlip => shouldFlip;
+    public bool Running
+    {
+      get => running;
+      set => running = value;
+    }
 
     public Collider2D BodyCollider => playerCollider;
 
@@ -607,6 +612,7 @@ namespace Player
     #region Horizontal
     [SerializeField] private bool isFacingRight = true;
     public bool shouldFlip = false;
+    private bool running = false;
 
     protected virtual void HandleHorizontal()
     {
@@ -655,6 +661,7 @@ namespace Player
       transform.localScale = currentScale;
       isFacingRight = !isFacingRight;
       shouldFlip = false;
+      running = false;
     }
 
     #endregion

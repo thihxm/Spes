@@ -35,6 +35,7 @@ namespace Player
     public bool ClimbingLedge { get; }
     public void ApplyVelocity(Vector2 vel, PlayerForce forceType);
     public bool ShouldFlip { get; }
+    public bool Running { get; set; }
     public void Flip();
 
     public Collider2D BodyCollider { get; }
