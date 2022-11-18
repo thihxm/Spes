@@ -54,7 +54,10 @@ namespace Player
       moveParticles.transform.localScale = Vector3.MoveTowards(moveParticles.transform.localScale, Vector3.one * speedPoint, 2 * Time.deltaTime);
 
       // Tilt with slopes
-      transform.up = Vector2.SmoothDamp(transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+      if (!isDashing)
+      {
+        transform.up = Vector2.SmoothDamp(transform.up, grounded ? player.GroundNormal : Vector2.up, ref tiltVelocity, tiltChangeSpeed);
+      }
 
       // 
       if (player.Input.x == 0)
@@ -168,12 +171,28 @@ namespace Player
         dashRingTransform.up = dir;
         dashRingParticles.Play();
         dashParticles.Play();
+        transform.rotation = Quaternion.Euler(0, 0, DashRotation(dir));
         // PlaySound(dashClip, 0.1f);
       }
       else
       {
         dashParticles.Stop();
       }
+    }
+
+    float DashRotation(Vector2 dir)
+    {
+      float angle = 0;
+      if (Mathf.Abs(dir.y) == 1)
+      {
+        angle = dir.y > 0 ? 90 : -90;
+      }
+      if (Mathf.Abs(dir.x) == Mathf.Abs(dir.y))
+      {
+        angle = dir.y > 0 ? 45 : -45;
+      }
+
+      return player.FacingRight ? angle : -angle;
     }
 
     #endregion
