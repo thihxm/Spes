@@ -138,6 +138,8 @@ namespace Player
 
     [Tooltip("Bounds for detecting walls on either side. Ensure it horizontally overflows your collider")]
     public Vector2 WallDetectorSize = new(0.75f, 1f);
+    public Vector2 LedgeWallDetectorSize = new(0.75f, 1f);
+    public Vector2 LedgeDetectorOffset = new(0f, 0f);
 
     [Header("EXTERNAL")]
     [Tooltip("The rate at which external velocity decays")]

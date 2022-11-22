@@ -187,8 +187,8 @@ namespace Player
 
       CheckCollisions();
       HandleCollisions();
-      HandleWalls();
       HandleLedges();
+      HandleWalls();
 
       HandleCrouching();
       HandleJump();
@@ -227,7 +227,6 @@ namespace Player
       // Ground and Ceiling
       var origin = (Vector2)transform.position + playerCollider.offset;
       groundHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.down, groundHits, stats.GrounderDistance, ~stats.PlayerLayer);
-      Debug.Log("groundHitCount: " + groundHitCount);
       ceilingHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.up, ceilingHits, stats.GrounderDistance, ~stats.PlayerLayer);
 
       // Walls
@@ -240,6 +239,11 @@ namespace Player
       var colliderOrigin = transform.position + standingColliderBounds.center;
       return new Bounds(colliderOrigin, stats.WallDetectorSize);
     }
+    private Bounds GetLedgeWallDetectionBounds()
+    {
+      var colliderOrigin = transform.position + standingColliderBounds.center + new Vector3(stats.LedgeDetectorOffset.x * wallDirection, stats.LedgeDetectorOffset.y);
+      return new Bounds(colliderOrigin, stats.LedgeWallDetectorSize);
+    }
 
     protected virtual void HandleCollisions()
     {
@@ -249,7 +253,6 @@ namespace Player
       // Landed on the Ground
       if (!grounded && groundHitCount > 0)
       {
-        Debug.Log("Landed on the Ground");
         grounded = true;
         ResetDash();
         ResetJump();
@@ -322,33 +325,46 @@ namespace Player
     #region Ledges
 
     private Vector2 ledgeCornerPos;
-    private bool grabbingLedge;
+    [SerializeField] private bool grabbingLedge;
     private bool climbingLedge;
 
     protected virtual void HandleLedges()
     {
-      if (climbingLedge || !isOnWall) return;
+      if (climbingLedge || !isOnWall)
+      {
+        hitWall = false;
+        return;
+      }
 
       grabbingLedge = TryGetLedgeCorner(out ledgeCornerPos);
 
       if (grabbingLedge) HandleLedgeGrabbing();
     }
 
+    bool hitWall = false;
+    bool hitLedge = false;
+    Collider2D[] ledgeWallHits = new Collider2D[5];
+
     protected virtual bool TryGetLedgeCorner(out Vector2 cornerPos)
     {
       cornerPos = Vector2.zero;
       Vector2 grabHeight = rigidBody.position + stats.LedgeGrabPoint.y * Vector2.up;
 
-      var hit1 = Physics2D.Raycast(grabHeight - stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.65f, stats.ClimbableLayer);
-      if (!hit1.collider) return false; // Should hit below the ledge. Only used to determine xPos accurately
+      // var hit1 = Physics2D.Raycast(grabHeight - stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.65f, stats.ClimbableLayer);
+      var bounds = GetLedgeWallDetectionBounds();
+      var ledgeWallHitCount = Physics2D.OverlapBoxNonAlloc(bounds.center, bounds.size, 0, ledgeWallHits, stats.ClimbableLayer);
+      hitWall = ledgeWallHitCount > 0;
+
+      if (ledgeWallHitCount <= 0) return false; // Should hit below the ledge. Only used to determine xPos accurately
 
       var hit2 = Physics2D.Raycast(grabHeight + stats.LedgeRaycastSpacing * Vector2.up, wallDirection * Vector2.right, 0.65f, stats.ClimbableLayer);
+      hitLedge = hit2.collider != null;
       if (hit2.collider) return false; // we only are within ledge-grab range when the first hits and second doesn't
 
       var hit3 = Physics2D.Raycast(grabHeight + new Vector2(wallDirection * 0.5f, stats.LedgeRaycastSpacing), Vector2.down, 0.65f, stats.ClimbableLayer);
       if (!hit3.collider) return false; // gets our yPos of the corner
 
-      cornerPos = new Vector2(hit1.point.x, hit3.point.y);
+      cornerPos = new Vector2(ledgeWallHits[0].ClosestPoint(transform.position).x, hit3.point.y);
       return true;
     }
 
@@ -756,8 +772,26 @@ namespace Player
           Gizmos.DrawWireSphere(grabPoint, 0.05f);
           Gizmos.DrawWireSphere(grabPoint + Vector3.Scale(stats.StandUpOffset, new(facingDir, 1)), 0.05f);
         }
-        Gizmos.DrawRay(grabHeight - stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right);
-        Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right);
+
+        var bounds = GetLedgeWallDetectionBounds();
+        if (hitWall)
+        {
+          Gizmos.color = Color.green;
+          Gizmos.DrawCube(bounds.center, bounds.size);
+        }
+        else
+        {
+
+          Gizmos.color = Color.red;
+          Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+
+        if (hitLedge)
+        {
+          Gizmos.color = Color.green;
+        }
+        Gizmos.DrawRay(grabHeight + stats.LedgeRaycastSpacing * Vector3.up, 0.65f * facingDir * Vector3.right); // Head detection
       }
     }
 #endif

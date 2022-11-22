@@ -43,7 +43,7 @@ MonoBehaviour:
   LedgeGrabDeceleration: 4
   LedgeGrabPoint: {x: 0.45, y: 0.8}
   StandUpOffset: {x: 1, y: 0.6}
-  LedgeRaycastSpacing: 0.25
+  LedgeRaycastSpacing: 0.5
   LedgeClimbDuration: 0.5
   VerticalDeadzone: 0.3
   AllowDash: 1
@@ -59,6 +59,8 @@ MonoBehaviour:
     m_Bits: 256
   GrounderDistance: 0.1
   WallDetectorSize: {x: 0.85, y: 1.22}
+  LedgeWallDetectorSize: {x: 0.65, y: 1}
+  LedgeDetectorOffset: {x: 0.32, y: -0.32}
   ExternalVelocityDecay: 0
   ShowWallDetection: 1
   ShowLedgeDetection: 1
