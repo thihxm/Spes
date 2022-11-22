@@ -1,15 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 public class NpcDialogController : MonoBehaviour
 {
     public bool showText = false;
-    public TextMeshProUGUI dialogBox;
-
+    public TextMeshProUGUI dialogTextBox;
     public CamTrigger camTrigger;
-    
+    public Image dialogBox;
     public string dialogText = "José Carlos > Faker";
+
+    public float timer = 0.0f;
 
     void Start()
     {
@@ -23,11 +25,19 @@ public class NpcDialogController : MonoBehaviour
 
         if(showText)
         {
-            dialogBox.text = dialogText;
+            dialogTextBox.text = dialogText;
+            dialogTextBox.enabled = true;
+
             dialogBox.enabled = true;
         } 
-        else dialogBox.enabled = false;
-       
+        else {
+            dialogTextBox.enabled = false; 
+            dialogBox.enabled = false;
+        }
+    }
+
+    private void OnTriggerStay(Collider2D other) {
+        // if (other.tag == "Player" && time) 
     }
 
     void playerInTalk()
