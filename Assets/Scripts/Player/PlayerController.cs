@@ -227,6 +227,7 @@ namespace Player
       // Ground and Ceiling
       var origin = (Vector2)transform.position + playerCollider.offset;
       groundHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.down, groundHits, stats.GrounderDistance, ~stats.PlayerLayer);
+      Debug.Log("groundHitCount: " + groundHitCount);
       ceilingHitCount = Physics2D.CapsuleCastNonAlloc(origin, playerCollider.size, playerCollider.direction, 0, Vector2.up, ceilingHits, stats.GrounderDistance, ~stats.PlayerLayer);
 
       // Walls
