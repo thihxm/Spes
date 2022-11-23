@@ -8,6 +8,7 @@ namespace Player
   public class PlayerAnimator : MonoBehaviour
   {
     private IPlayerController player;
+    private WindShooter windShooter;
     private Animator anim;
     private SpriteRenderer spriteRenderer;
     // private AudioSource source;
@@ -17,6 +18,7 @@ namespace Player
       player = GetComponentInParent<IPlayerController>();
       anim = GetComponentInParent<Animator>();
       spriteRenderer = GetComponent<SpriteRenderer>();
+      windShooter = GetComponentInParent<WindShooter>();
       // source = GetComponent<AudioSource>();
     }
 
@@ -28,6 +30,7 @@ namespace Player
       player.LedgeClimbChanged += OnLedgeClimbChanged;
       player.Jumped += OnJumped;
       player.DoubleJumped += OnDoubleJumped;
+      windShooter.OnWindShoot += OnWindShoot;
     }
 
     private void Update()
@@ -252,6 +255,21 @@ namespace Player
 
     #endregion
 
+    #region Air Bending
+
+    private bool isAirBending;
+    private void OnWindShoot()
+    {
+      isAirBending = true;
+    }
+
+    private void EndAttack()
+    {
+      isAirBending = false;
+    }
+
+    #endregion
+
     #region Animation
 
     private float lockedTill;
@@ -294,6 +312,8 @@ namespace Player
           {
             return ChangingDirection;
           }
+
+          if (isAirBending) { return AirBending; }
 
           if (player.Input.x == 0)
           {
