@@ -21,6 +21,9 @@ namespace Player
     [Tooltip("A constant downward force applied while grounded. Helps on vertical moving platforms and slopes"), Range(0f, -10f)]
     public float GroundingForce = -1.5f;
 
+    [Tooltip("Change direction threshold for a better felling when changing direction"), Range(0f, 1f)]
+    public float ChangeDirectionThreshold = 0.5f;
+
     [Header("CROUCHING")]
     [Tooltip("Enable crouching")]
     public bool AllowCrouching = true;

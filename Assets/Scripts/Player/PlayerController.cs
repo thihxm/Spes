@@ -380,21 +380,21 @@ namespace Player
         var pos = rigidBody.position;
         var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(wallDirection, 1f));
         rigidBody.position = Vector2.MoveTowards(pos, targetPos, stats.LedgeGrabDeceleration * Time.fixedDeltaTime);
-        StartCoroutine(ClimbLedge());
+        StartCoroutine(ClimbLedge(wallDirection));
       }
 
       // TODO: Create new stat variable instead of using Ladders or rename it to "vertical deadzone", "deadzone threshold", etc.
       if (yInput > stats.VerticalDeadzone)
-        StartCoroutine(ClimbLedge());
+        StartCoroutine(ClimbLedge(wallDirection));
     }
 
-    protected virtual IEnumerator ClimbLedge()
+    protected virtual IEnumerator ClimbLedge(int direction)
     {
       LedgeClimbChanged?.Invoke(true);
       climbingLedge = true;
 
       TakeAwayControl();
-      var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(wallDirection, 1f));
+      var targetPos = ledgeCornerPos - Vector2.Scale(stats.LedgeGrabPoint, new(direction, 1f));
       transform.position = targetPos;
 
       float lockedUntil = Time.time + stats.LedgeClimbDuration;
@@ -406,7 +406,7 @@ namespace Player
       grabbingLedge = false;
       SetOnWall(false);
 
-      targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
+      targetPos = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(direction, 1f));
       while (Physics2D.OverlapBox(targetPos, playerCollider.bounds.size, 0f, stats.ClimbableLayer))
       {
         targetPos.y += 0.5f;
@@ -414,40 +414,6 @@ namespace Player
       transform.position = targetPos;
       ReturnControl();
     }
-
-    void UpdateClimbPosition(int state)
-    {
-      float xMultiplier = isFacingRight ? 1f : -1f;
-      var newPosition = transform.position;
-      if (state == 3)
-      {
-        newPosition += new Vector3(0f * xMultiplier, .2f);
-      }
-      else if (state == 4)
-      {
-        // transform.position += new Vector3(.2f * xMultiplier, .1f);
-        newPosition += new Vector3(0f * xMultiplier, .1f);
-      }
-      else if (state == 5)
-      {
-        // transform.position += new Vector3(.3f * xMultiplier, .15f);
-        newPosition += new Vector3(.0f * xMultiplier, .15f);
-      }
-      else if (state == 6)
-      {
-        newPosition += new Vector3(.3f * xMultiplier, .15f);
-      }
-      else if (state == 7)
-      {
-        newPosition = ledgeCornerPos + Vector2.Scale(stats.StandUpOffset, new(wallDirection, 1f));
-      }
-      else
-      {
-        return;
-      }
-      transform.position = newPosition;
-    }
-
 
     #endregion
 
