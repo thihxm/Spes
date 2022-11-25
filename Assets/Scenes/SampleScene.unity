@@ -20588,6 +20588,11 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!4 &395958604 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7354227418366942285, guid: 6ddc1310750734ca280ed1cbdcaac46b, type: 3}
+  m_PrefabInstance: {fileID: 1537984390}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &399703938
 GameObject:
   m_ObjectHideFlags: 3
@@ -28537,6 +28542,11 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 13
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &630639093 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7354227418366942285, guid: 6ddc1310750734ca280ed1cbdcaac46b, type: 3}
+  m_PrefabInstance: {fileID: 136758336}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &632691291
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -70155,6 +70165,22 @@ Transform:
   m_Father: {fileID: 1745166460}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1423089193
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1490831260}
+  m_Layer: 0
+  m_Name: 'Recovery GameObject for Transform (ID in file: 1490831260)'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!4 &1447751437 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7354227418366942285, guid: 6ddc1310750734ca280ed1cbdcaac46b, type: 3}

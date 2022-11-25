@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 namespace Player
@@ -23,6 +22,8 @@ namespace Player
 
     [SerializeField] private float tiltChangeSpeed = .05f;
     private Vector2 tiltVelocity;
+
+    public event Action OnWindShoot;
 
     void Awake()
     {
@@ -59,6 +60,8 @@ namespace Player
       var windDirection = GetDirection(swipeDelta);
 
       if (windDirection == Vector2.zero || windDirection == Vector2.down) return;
+
+      OnWindShoot?.Invoke();
 
       windRingTransform.up = windDirection;
       windRingParticles.Play();
