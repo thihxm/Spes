@@ -7,8 +7,8 @@ namespace Scenario
   public class InteractableButton : MonoBehaviour
   {
     [SerializeField] private GameObject keyObject;
-    [SerializeField] private GameObject doorObject;
-    private IInteractableObject door;
+    [SerializeField] private GameObject[] doorObjects;
+    private List<IInteractableObject> doors = new List<IInteractableObject>();
 
     private Collider2D buttonCollider;
     [SerializeField] public Bounds KeyDetector = new(Vector3.zero, Vector2.one);
@@ -19,16 +19,24 @@ namespace Scenario
 
     private void Awake()
     {
-      door = doorObject.GetComponent<IInteractableObject>();
-      Debug.Log(door);
+      foreach (var doorObject in doorObjects)
+      {
+        doors.Add(doorObject.GetComponent<IInteractableObject>());
+      }
     }
 
     void Update()
     {
       HandleCollision();
-      if ((isActive && !door.IsActive) || (!isActive && door.IsActive))
+      if (doors.Count > 0)
       {
-        door.Toggle();
+        if ((isActive && !doors[0].IsActive) || (!isActive && doors[0].IsActive))
+        {
+          foreach (var door in doors)
+          {
+            door.Toggle();
+          }
+        }
       }
     }
 
