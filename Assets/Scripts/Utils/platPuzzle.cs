@@ -57,6 +57,6 @@ public class platPuzzle : MonoBehaviour
 
     void goDown() {
         // plat.transform.position = Vector3.SmoothDamp(plat.transform.position, initialPosition, ref velocity, closingSmoothTime);
-        plat.transform.position = Vector3.MoveTowards(plat.transform.position, initialPosition, 3 * Time.deltaTime);
+        plat.transform.position = Vector3.MoveTowards(plat.transform.position, initialPosition, 2f * Time.deltaTime);
     }
 }
