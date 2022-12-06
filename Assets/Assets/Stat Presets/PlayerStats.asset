@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54844ca32db3f4625a71359716d0eba6, type: 3}
+  m_Name: PlayerStats
+  m_EditorClassIdentifier: 
+  MaxSpeed: 14
+  Acceleration: 120
+  GroundDeceleration: 100
+  AirDeceleration: 30
+  GroundingForce: -7.5
+  ChangeDirectionThreshold: 0.35
+  AllowCrouching: 0
+  CrouchInputThreshold: -0.5
+  CrouchSpeedPenalty: 0.5
+  CrouchSlowdownFrames: 50
+  CrouchBufferCheck: 0.1
+  AllowDoubleJump: 1
+  JumpPower: 32
+  MaxFallSpeed: 40
+  FallAcceleration: 110
+  JumpEndEarlyGravityModifier: 3
+  CoyoteFrames: 7
+  JumpBufferFrames: 7
+  AllowWalls: 1
+  ClimbableLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  RequireInputPush: 1
+  WallClimbSpeed: 5
+  WallFallAcceleration: 8
+  MaxWallFallSpeed: 15
+  WallJumpPower: {x: 30, y: 25}
+  WallJumpInputLossFrames: 18
+  AllowLedges: 1
+  LedgeGrabDeceleration: 4
+  LedgeGrabPoint: {x: 0.45, y: 0.8}
+  StandUpOffset: {x: 1, y: 0.6}
+  LedgeRaycastSpacing: 0.8
+  LedgeClimbDuration: 0.5
+  VerticalDeadzone: 0.3
+  AllowDash: 1
+  DashVelocity: 50
+  DashDurationFrames: 8
+  DashEndHorizontalMultiplier: 0.25
+  DiagonalDashMinAngle: 15
+  DiagonalDashMaxAngle: 75
+  AllowAttacks: 0
+  AttackFrameCooldown: 15
+  PlayerLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  GrounderDistance: 0.1
+  WallDetectorSize: {x: 0.85, y: 1.22}
+  LedgeWallDetectorSize: {x: 0.65, y: 1}
+  LedgeDetectorOffset: {x: 0.32, y: -0.32}
+  ExternalVelocityDecay: 0
+  ShowWallDetection: 1
+  ShowLedgeDetection: 1
